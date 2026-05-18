@@ -1,0 +1,205 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode — warm off-white with teal accent */
+    --background: 150 10% 97%;
+    --foreground: 150 10% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 10% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 10% 8%;
+    --primary: 177 60% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 5% 93%;
+    --secondary-foreground: 150 5% 25%;
+    --muted: 150 5% 93%;
+    --muted-foreground: 168 5% 45%;
+    --accent: 177 60% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 5% 87%;
+    --input: 150 5% 87%;
+    --ring: 177 60% 44%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode — index.html original: #161716 bg, #1d201f surface, #2cb5af primary */
+    --background: 150 2% 9%;
+    --foreground: 150 14% 96%;
+    --card: 150 4% 12%;
+    --card-foreground: 150 14% 96%;
+    --popover: 150 4% 12%;
+    --popover-foreground: 150 14% 96%;
+    --primary: 177 60% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 5% 15%;
+    --secondary-foreground: 168 5% 65%;
+    --muted: 150 5% 15%;
+    --muted-foreground: 168 5% 61%;
+    --accent: 177 60% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 5% 20%;
+    --input: 150 5% 20%;
+    --ring: 177 60% 44%;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* ─── Surface & Layout ─── */
+  .surface {
+    @apply bg-card border border-border rounded-xl;
+  }
+
+  .surface-hover {
+    @apply surface transition-colors duration-150 hover:border-primary/40 hover:bg-card/80 cursor-pointer;
+  }
+
+  /* ─── Typography ─── */
+  .label-xs {
+    @apply text-xs font-medium tracking-widest uppercase text-muted-foreground;
+  }
+
+  /* ─── Page Shell ─── */
+  .page-shell {
+    @apply min-h-screen bg-background flex flex-col;
+  }
+
+  /* ─── Header ─── */
+  .app-header {
+    @apply sticky top-0 z-50 bg-background/90 border-b border-border backdrop-blur-sm;
+  }
+
+  .app-header-inner {
+    @apply container mx-auto px-4 h-14 flex items-center justify-between;
+  }
+
+  /* ─── Primary Button ─── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-primary text-primary-foreground
+           px-5 py-2.5 rounded-lg text-sm font-semibold
+           transition-all duration-150
+           hover:brightness-110 active:brightness-95 active:scale-[0.99]
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* ─── Premium Button (same as btn-primary, larger variant) ─── */
+  .btn-premium {
+    @apply inline-flex items-center justify-center gap-2
+           bg-primary text-primary-foreground
+           px-6 py-3 rounded-lg text-base font-semibold
+           transition-all duration-150
+           hover:brightness-110 active:brightness-95 active:scale-[0.99]
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* ─── Card Elevated ─── */
+  .card-elevated {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+  }
+
+  /* ─── Choice Buttons (A/B Test) ─── */
+  .choice-card {
+    @apply surface transition-all duration-150 cursor-pointer
+           hover:border-primary/50
+           active:scale-[0.98];
+  }
+
+  .choice-card-active {
+    @apply border-primary bg-primary/10;
+  }
+
+  .choice-card-done {
+    @apply border-border/60 bg-muted/30;
+  }
+
+  /* ─── Progress Bar ─── */
+  .progress-track {
+    @apply w-full h-0.5 bg-border rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-primary rounded-full transition-all duration-500 ease-out;
+  }
+
+  /* ─── Badge ─── */
+  .badge-blue {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-primary/10 text-primary border border-primary/20;
+  }
+
+  /* ─── Info Box ─── */
+  .info-box {
+    @apply rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground;
+  }
+
+  /* ─── EQ Bar ─── */
+  .eq-bar-boost {
+    @apply bg-primary/80 rounded-t-[2px] transition-all duration-500;
+  }
+
+  .eq-bar-cut {
+    @apply bg-primary/40 rounded-b-[2px] transition-all duration-500;
+  }
+
+  /* ─── Fade-in animation (subtle, single) ─── */
+  .fade-up {
+    animation: fadeUp 0.25s ease-out both;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ─── Interactive scale on press ─── */
+  button {
+    @apply active:scale-[0.98] transition-transform duration-100;
+  }
+
+  /* ─── Scrollbar (dark mode) ─── */
+  .dark ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .dark ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+}
