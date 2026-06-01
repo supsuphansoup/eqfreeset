@@ -1,5 +1,5 @@
 // Service Worker for EQ FreeSet PWA
-const CACHE_VERSION = 'v1.0.2'
+const CACHE_VERSION = 'v2.0.0'
 const STATIC_CACHE = `eqfreeset-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `eqfreeset-dynamic-${CACHE_VERSION}`
 const ALL_CACHES = [STATIC_CACHE, DYNAMIC_CACHE]
@@ -18,8 +18,8 @@ self.addEventListener('install', (event) => {
     caches.open(STATIC_CACHE)
       .then((cache) => cache.addAll(STATIC_ASSETS))
       .catch(() => {})
+      .then(() => self.skipWaiting())
   )
-  self.skipWaiting()
 })
 
 // Activate event — clean up old caches

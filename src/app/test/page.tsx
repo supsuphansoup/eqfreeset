@@ -36,7 +36,7 @@ export default function TestPage() {
 
   const {
     currentStep, selectedDevice, selectedAudioType, currentRound,
-    currentAxis, manualMode,
+    currentAxis, manualMode, testResult,
     setCurrentStep, setSelectedDevice, setSelectedAudioType,
     setSelectedSegment, setSegments, setManualMode,
     processResponse, resetTestProgress, getCurrentABGains, getCurrentSegment,
@@ -52,9 +52,18 @@ export default function TestPage() {
   const [playingOption, setPlayingOption] = useState<'A' | 'B' | null>(null)
   
   const isProcessingRef = useRef(false)
+  const roundStartTimeRef = useRef<number>(Date.now())
 
   useEffect(() => { return () => { cleanup() } }, [cleanup])
-  useEffect(() => { if (currentStep === 'result') router.push('/result') }, [currentStep, router])
+  useEffect(() => {
+    if (currentStep === 'result') {
+      if (testResult?.id) {
+        router.push(`/result?id=${testResult.id}`)
+      } else {
+        router.push('/result')
+      }
+    }
+  }, [currentStep, testResult, router])
   useEffect(() => {
     const n = searchTerm.toLowerCase()
     setFilteredDevices(n ? getAllDevices().filter(d =>
@@ -67,6 +76,7 @@ export default function TestPage() {
     setHeardB(false)
     setPlayingOption(null)
     isProcessingRef.current = false
+    roundStartTimeRef.current = Date.now()
   }, [currentRound])
   useEffect(() => { if (!isPlaying) setPlayingOption(null) }, [isPlaying])
 
@@ -420,7 +430,7 @@ export default function TestPage() {
 
         {/* Axis Info */}
         <div className="mb-8">
-          <p className="label-xs mb-2">{t.test.bayesianLabel}</p>
+          <p className="label-xs mb-2">{t.test.nowTesting}</p>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {axisInfo?.title ?? currentAxis}
           </h1>

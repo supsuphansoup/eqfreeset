@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useTestStore, EQBand, BAYESIAN_TOTAL_ROUNDS } from '@/lib/audio-store'
 import { useLanguage } from '@/lib/language-context'
+import { findDeviceById } from '@/lib/device-db'
 import { Download, Share2, RotateCcw, Home, Loader2 } from 'lucide-react'
 
 interface EQResult {
   axis: string
   preference: 'A' | 'B' | 'similar'
-  confidence: number
   description: string
 }
 
@@ -51,8 +51,7 @@ function buildResults(
     let preference: 'A' | 'B' | 'similar' = 'similar'
     if (gain > THRESHOLD) preference = 'B'
     else if (gain < -THRESHOLD) preference = 'A'
-    const confidence = Math.min(100, Math.round(Math.abs(gain) / 10 * 70) + 30)
-    return { axis, preference, confidence, description: axisDesc[axis]?.[preference] ?? '' }
+    return { axis, preference, description: axisDesc[axis]?.[preference] ?? '' }
   })
 
   const baseBands = device?.baseEQ ?? defaultEqBands
@@ -66,6 +65,7 @@ function buildResults(
 
 function ResultPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t } = useLanguage()
   const r = t.result
   const [eqResults, setEqResults] = useState<EQResult[]>([])
@@ -74,8 +74,39 @@ function ResultPageContent() {
   const captureRef = useRef<HTMLDivElement>(null)
   const { selectedDevice, isTestComplete, resetTest, testResult } = useTestStore()
 
+  const [displayedResult, setDisplayedResult] = useState<any>(null)
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
+
   useEffect(() => {
-    // 1) Zustand 상태 정상: 저장 + 결과 렌더링
+    const id = searchParams.get('id')
+
+    // 1) 만약 URL에 id 파라미터가 있다면 localStorage에서 로드 시도
+    if (id) {
+      try {
+        const stored = localStorage.getItem('eqfreeset.results')
+        const results = stored ? JSON.parse(stored) : []
+        const found = results.find((item: any) => item.id === id)
+        if (found) {
+          const device = findDeviceById(found.deviceId) || {
+            id: found.deviceId,
+            brand: 'Unknown',
+            name: found.deviceName || 'Unknown Device',
+            alias: [],
+            baseEQ: defaultEqBands.map(b => ({ ...b })),
+            version: '1.0.0'
+          }
+          const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, found.personalizationDelta, r.axis)
+          setEqResults(viewResults)
+          setOptimalEQ(viewOptimal)
+          setDisplayedResult(found)
+          return
+        }
+      } catch (e) {
+        console.error('Failed to restore result from localStorage:', e)
+      }
+    }
+
+    // 2) Zustand 상태 정상: 저장 + 결과 렌더링
     if (isTestComplete && selectedDevice && testResult) {
       try {
         sessionStorage.setItem('eq_last_result', JSON.stringify({ device: selectedDevice, testResult }))
@@ -83,10 +114,11 @@ function ResultPageContent() {
       const { results, optimalEQ } = buildResults(selectedDevice, testResult.personalizationDelta, r.axis)
       setEqResults(results)
       setOptimalEQ(optimalEQ)
+      setDisplayedResult(testResult)
       return
     }
 
-    // 2) Zustand 미완료 → sessionStorage 복구 시도
+    // 3) Zustand 미완료 → sessionStorage 복구 시도
     try {
       const cached = sessionStorage.getItem('eq_last_result')
       if (cached) {
@@ -95,10 +127,35 @@ function ResultPageContent() {
           const { results, optimalEQ } = buildResults(device, cachedResult.personalizationDelta, r.axis)
           setEqResults(results)
           setOptimalEQ(optimalEQ)
+          setDisplayedResult(cachedResult)
+          return
         }
       }
     } catch {}
-  }, [isTestComplete, selectedDevice, testResult, r.axis])
+
+    // 4) 최신 결과 자동 로드 (localStorage의 최신값)
+    try {
+      const stored = localStorage.getItem('eqfreeset.results')
+      const results = stored ? JSON.parse(stored) : []
+      if (results.length > 0) {
+        const latest = results[0]
+        const device = findDeviceById(latest.deviceId) || {
+          id: latest.deviceId,
+          brand: 'Unknown',
+          name: latest.deviceName || 'Unknown Device',
+          alias: [],
+          baseEQ: defaultEqBands.map(b => ({ ...b })),
+          version: '1.0.0'
+        }
+        const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, latest.personalizationDelta, r.axis)
+        setEqResults(viewResults)
+        setOptimalEQ(viewOptimal)
+        setDisplayedResult(latest)
+      }
+    } catch (e) {
+      console.error('Failed to load latest result from localStorage:', e)
+    }
+  }, [searchParams, isTestComplete, selectedDevice, testResult, r.axis])
 
   const getInsightMessage = (results: EQResult[]) => {
     const strong = results.filter(res => res.preference !== 'similar')
@@ -129,10 +186,18 @@ function ResultPageContent() {
         useCORS: true,
         logging: false,
       })
-      const blob: Blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b!), 'image/png')
+      const blob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => {
+          if (b) resolve(b)
+          else reject(new Error('canvas.toBlob returned null'))
+        }, 'image/png')
       )
       const filename = `${optimalEQ?.device ?? 'eq'}_result.png`
+
+      const resultId = displayedResult?.id || searchParams.get('id') || ''
+      const shareUrl = resultId ? `${window.location.origin}/result?id=${resultId}` : window.location.origin
+      const shareTextContent = `${optimalEQ?.device ?? '기기'}${r.shareText.replace('https://eqfreeset.pages.dev', shareUrl)}`
+
       // Web Share API with files (mobile)
       if (
         navigator.canShare &&
@@ -140,16 +205,26 @@ function ResultPageContent() {
       ) {
         await navigator.share({
           title: r.shareTitle,
+          text: shareTextContent,
           files: [new File([blob], filename, { type: 'image/png' })],
         })
       } else {
-        // Fallback: download
+        // Fallback: download image + copy link to clipboard
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
         a.download = filename
         a.click()
-        URL.revokeObjectURL(url)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+        // Clipboard copy
+        try {
+          await navigator.clipboard.writeText(shareUrl)
+        } catch {
+          await navigator.clipboard.writeText(shareTextContent)
+        }
+        setShareFeedback(r.shareCopied)
+        setTimeout(() => setShareFeedback(null), 3000)
       }
     } catch {
       // share/download 실패 시 조용히 무시
@@ -164,7 +239,7 @@ function ResultPageContent() {
   }
 
   /* ─── No result state (Zustand 미완료 + sessionStorage 복구도 없음) ─── */
-  if (!isTestComplete && !optimalEQ) return (
+  if (!displayedResult && !optimalEQ) return (
     <div className="page-shell">
       <header className="app-header">
         <div className="app-header-inner">
@@ -208,17 +283,16 @@ function ResultPageContent() {
           <p className="text-sm text-muted-foreground leading-relaxed mb-3">
             {getInsightMessage(eqResults)}
           </p>
-          {/* 신뢰도 + 조기종료 배지 */}
+          {/* 라운드 수 + 조기종료 배지 */}
           <div className="flex items-center gap-2 flex-wrap">
-
-            {testResult?.completedRounds != null && (
+            {displayedResult?.completedRounds != null && (
               <Badge variant="secondary" className="text-xs">
-                {testResult.completedRounds}/{BAYESIAN_TOTAL_ROUNDS} 라운드
+                {displayedResult.completedRounds}/{BAYESIAN_TOTAL_ROUNDS} {r.rounds}
               </Badge>
             )}
-            {testResult?.earlyStop && (
+            {displayedResult?.earlyStop && (
               <Badge className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20">
-                ⚡ 조기 완료
+                ⚡ {r.earlyStop}
               </Badge>
             )}
           </div>
@@ -300,7 +374,7 @@ function ResultPageContent() {
             {/* Band values */}
             <div className="grid grid-cols-5 gap-2 mb-6">
               {optimalEQ.bands.map((band) => {
-                const g = Math.round(band.gain)
+                const g = parseFloat(band.gain.toFixed(1))
                 return (
                   <div key={band.frequency} className="text-center">
                     <div className="text-[10px] text-muted-foreground mb-0.5">
@@ -333,6 +407,11 @@ function ResultPageContent() {
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">{r.shareTip}</p>
               </div>
             </div>
+            {shareFeedback && (
+              <p className="text-xs text-primary text-center mt-3 animate-fade-in font-medium">
+                {shareFeedback}
+              </p>
+            )}
           </div>
         )}
 

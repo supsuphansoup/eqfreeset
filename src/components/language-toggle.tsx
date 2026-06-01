@@ -15,9 +15,9 @@ export function LanguageToggle() {
 
   return (
     <div className="relative inline-flex items-center justify-center">
-      <button className="w-10 h-10 flex flex-col items-center justify-center gap-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors pointer-events-none">
+      <button className="w-10 h-10 flex flex-col items-center justify-center gap-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors pointer-events-none" aria-hidden="true" tabIndex={-1}>
         <Globe className="w-4 h-4" />
-        <span className="text-[9px] leading-none font-medium tracking-wide">lang</span>
+        <span className="text-[9px] leading-none font-medium tracking-wide uppercase">{lang}</span>
       </button>
       <select
         value={lang}
