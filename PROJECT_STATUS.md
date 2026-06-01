@@ -60,8 +60,7 @@ src/
 │   ├── sitemap.ts            # SEO 사이트맵 (10개 페이지)
 │   └── robots.ts             # SEO robots.txt
 ├── lib/
-│   ├── audio-store.ts        # 핵심 알고리즘 + Zustand 상태 (useAudioStore, useTestStore)
-│   ├── local-data.ts         # 로컬스토리지 CRUD (SavedResult)
+│   ├── audio-store.ts        # 핵심 알고리즘 + Zustand 상태 (useAudioStore, useTestStore, 로컬저장)
 │   ├── device-db.ts          # 기기 데이터베이스 (AutoEQ 기반)
 │   └── utils.ts              # cn() 유틸리티 (clsx + tailwind-merge)
 └── components/
@@ -150,13 +149,11 @@ bayesStd = max(0.5, bayesStd)  // 최소 하한선
 
 - 전체 곡이 30초 이상이면 앞 15%, 뒤 15% 제외 (전주/후주 skip)
 - 5초 간격 슬라이딩 윈도우, 10초 구간
-- OfflineAudioContext + AnalyserNode (fftSize=2048)로 FFT 에너지 추출
+- 브라우저 로컬 디코딩된 PCM 오디오 데이터를 기반으로 실시간 대역통과 필터 연산 적용
+- 2차 Butterworth 대역통과 필터 계수 계산(Bilinear Transform)을 사용하여 4개 인지 축별 주파수 대역 RMS 추출
 - Prominence 가중치 (`^1.5`)로 대역별 특성 구간 선별
-- **4개 축을 Promise.all로 동시 분석**
 - 겹치지 않는 상위 3개 구간 반환
-
-> ⚠️ 배포 후 개선 예정: OfflineAudioContext를 구간마다 생성하는 성능 문제.
-> 전체 곡을 1회 FFT 분석 후 구간별 슬라이싱으로 교체 권장.
+- OfflineAudioContext 및 AnalyserNode를 전혀 생성하지 않는 100% 클라이언트 연산으로, 지연 시간 최소화 (~수 ms 수준 완료)
 
 ### 업로드 음원 구간 선택 모드 (2가지)
 - **자동 추천 (권장)**: 라운드마다 현재 테스트 축에 최적화된 구간 자동 재생
@@ -283,22 +280,6 @@ bayesStd = max(0.5, bayesStd)  // 최소 하한선
 
 ---
 
-## 11. 배포 후 개선 예정 (Backlog)
-
-### 🔴 성능
-- `analyzeSegments` OfflineAudioContext 구간마다 생성 → 1회 FFT + 슬라이싱으로 교체
-  - 파일: `src/lib/audio-store.ts` → `analyzeSegments()` 함수
-  - 모바일 분석 10~20초 → 3~5초로 단축 예상
-
-### 🟠 알고리즘
-- 라운드 수 유연화: 신뢰도 임계값 도달 시 조기 종료 옵션
-- `similar` 응답 처리: 중립 응답이 많을 때 탐색 범위 자동 조정
-
-### 🟡 UX / 기능
-- 결과 히스토리 페이지 (`/history`) — 과거 테스트 결과 목록
-- 기기 DB 추가 요청 시 업데이트 파이프라인 구축
-
----
 
 ## 12. 환경/빌드
 

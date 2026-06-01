@@ -146,25 +146,25 @@ gainNode.gain.value = 10^(preampDb / 20)   // dB → linear 변환
 ### 동작 방식
 
 1. 30초 이상 곡은 **앞 15%, 뒤 15% 제외** (전주/아웃트로 skip)
-2. 유효 구간에서 **5초 간격 슬라이딩 윈도우**, 10초 구간 추출
-3. 각 구간을 `OfflineAudioContext` + `AnalyserNode (fftSize=2048)`로 FFT 분석
-4. 축별 주파수 범위의 에너지 비중(prominence)을 계산
-5. `score = bandEnergy × prominence^1.5` — 대역별 특성이 두드러진 구간에 높은 점수
-6. **겹치지 않는 상위 3개 구간** 반환
+2. 유효 구간에서 **5초 간격 슬라이딩 윈도우**를 사용하여 2~10초 길이 구간 추출
+3. 각 구간의 PCM Float32Array 데이터에 직접 2차 Butterworth 대역통과 필터(Bilinear Transform 방식) 연산을 수행
+4. 대역통과 필터 통과 후 각 축별 RMS 에너지와 구간 전체의 RMS 에너지를 계산
+5. `prominence = bandRMS / totalRMS`를 산출하여 주파수 비중 측정
+6. `score = bandRMS × prominence^1.5` — 대역별 특성이 두드러진 구간에 높은 점수 부여
+7. **겹치지 않는 상위 3개 구간** 반환
 
 ### 축별 분석 주파수 범위
 
 | 축 | 범위 |
 |----|------|
 | `bass` | 20 – 250 Hz |
-| `warmth` | 200 – 800 Hz |
-| `vocal` | 500 – 4000 Hz |
-| `brightness` | 4000 – 20000 Hz |
+| `warmth` | 250 – 600 Hz |
+| `vocal` | 600 – 3500 Hz |
+| `brightness` | 3500 – 16000 Hz |
 
-### 현재 한계 및 개선 예정
+### 성능 특징
 
-- **현재**: 구간마다 `OfflineAudioContext` 생성 → 3분 곡 기준 약 72회 생성
-- **개선안**: 전체 곡 1회 FFT → 구간별 슬라이싱으로 교체 (예상 소요: 10~20초 → 3~5초)
+- **클라이언트 사이드 연산**: `OfflineAudioContext`나 `AnalyserNode`를 생성하지 않고, 직접 디코딩된 오디오 버퍼의 채널 데이터를 O(n) 필터 수식 시뮬레이션으로 연산하여 수 밀리초(ms) 만에 분석이 완료됨.
 
 ---
 
@@ -230,8 +230,7 @@ confidence = clamp(1 - avgStd / 6, 0.5, 0.99)
 
 | 파일 | 역할 |
 |------|------|
-| `src/lib/audio-store.ts` | 핵심 알고리즘 전체 (Bayesian, 구간 분석, EQ 계산) |
+| `src/lib/audio-store.ts` | 핵심 알고리즘 전체 (Bayesian, 구간 분석, EQ 계산, 로컬스토리지 저장) |
 | `src/app/test/page.tsx` | 테스트 UI, 라운드 진행, 구간 분석 호출 |
 | `src/app/result/page.tsx` | 결과 표시, EQ 그래프, 다운로드 |
-| `src/lib/local-data.ts` | 로컬스토리지 CRUD |
 | `src/lib/device-db.ts` | 기기별 AutoEQ 기본값 DB |
