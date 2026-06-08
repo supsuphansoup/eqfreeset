@@ -13,14 +13,14 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swa
 
 export const metadata: Metadata = {
   title: {
-    default: 'EQ FreeSet — 나만의 이어폰·헤드폰 EQ를 3분 만에',
+    default: 'EQ FreeSet — Find Your Perfect Earphone & Headphone EQ in 3 Minutes',
     template: '%s | EQ FreeSet',
   },
-  description: '이어폰·헤드폰 특성에 맞춘 A/B 블라인드 테스트로 나에게 딱 맞는 이퀄라이저 설정을 무료로 찾아보세요. 결과는 JSON으로 즉시 다운로드 가능.',
+  description: 'Free personalized equalizer settings for your earphones and headphones. Find your perfect EQ through A/B blind testing in just 3 minutes. Download results as JSON instantly.',
   keywords: [
-    'EQ 설정', '이퀄라이저', '이어폰 EQ', '헤드폰 EQ', 'A/B 테스트', '오디오 최적화',
-    '사운드 튜닝', 'AutoEQ', 'EQ FreeSet', '무료 EQ', '개인화 EQ', '청음 테스트',
-    '이어폰 추천 EQ', '헤드폰 튜닝', 'equalizer settings',
+    'EQ settings', 'equalizer', 'earphone EQ', 'headphone EQ', 'A/B test', 'audio optimization',
+    'sound tuning', 'AutoEQ', 'EQ FreeSet', 'free EQ', 'personalized EQ', 'hearing test',
+    'EQ 설정', '이퀄라이저', '이어폰 EQ', '헤드폰 EQ', 'equalizer settings',
   ],
   authors: [{ name: 'EQ FreeSet' }],
   creator: 'EQ FreeSet',
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'EQ FreeSet — 나만의 이어폰·헤드폰 EQ를 3분 만에',
-    description: '이어폰·헤드폰에 맞는 EQ를 A/B 블라인드 테스트로 무료로 찾아보세요. 결과를 JSON으로 즉시 다운로드.',
+    title: 'EQ FreeSet — Find Your Perfect EQ in 3 Minutes',
+    description: 'Free personalized equalizer settings for your earphones and headphones via A/B blind testing. Download results as JSON instantly.',
     url: 'https://eqfreeset.pages.dev',
     siteName: 'EQ FreeSet',
     images: [
@@ -50,17 +50,17 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'EQ FreeSet — 나만의 이퀄라이저 설정을 3분 만에 찾아보세요',
+        alt: 'EQ FreeSet — Find your perfect equalizer settings in 3 minutes',
         type: 'image/png',
       }
     ],
-    locale: 'ko_KR',
+    locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EQ FreeSet — 나만의 이어폰·헤드폰 EQ를 3분 만에',
-    description: 'A/B 블라인드 테스트로 내 귀에 꼭 맞는 이퀄라이저 설정을 무료로 찾아보세요.',
+    title: 'EQ FreeSet — Find Your Perfect EQ in 3 Minutes',
+    description: 'Free personalized equalizer settings for earphones and headphones. A/B blind test in 3 minutes.',
     images: ['/og-image.png'],
   },
   manifest: '/manifest.json',
@@ -87,7 +87,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <head>
         {/* 테마 초기화 스크립트 (깜빡임 방지) */}
         <script

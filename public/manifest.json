@@ -1,7 +1,7 @@
 {
-  "name": "EQ FreeSet - 개인화 EQ 튜너",
+  "name": "EQ FreeSet — Personalized EQ Tuner",
   "short_name": "EQ FreeSet",
-  "description": "A/B 테스트를 통한 개인화된 오디오 EQ 설정 서비스",
+  "description": "Find your perfect equalizer settings in 3 minutes with A/B blind testing.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
@@ -35,6 +35,6 @@
     }
   ],
   "categories": ["music", "utilities", "productivity"],
-  "lang": "ko",
+  "lang": "en",
   "dir": "ltr"
 }

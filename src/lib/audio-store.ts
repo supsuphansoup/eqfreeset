@@ -154,8 +154,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       filters[filters.length - 1].connect(gainNode)
       set({ audioContext, gainNode, filters, isInitialized: true, error: null })
     } catch (error) {
-      console.error('AudioContext 초기화 실패:', error)
-      set({ error: '오디오 초기화에 실패했습니다.' })
+      console.error('AudioContext init failed:', error)
+      set({ error: 'Failed to initialize audio. Please check your browser settings.' })
     }
   },
 
@@ -164,7 +164,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     try {
       await get().initAudioContext()
       const { audioContext, currentSource } = get()
-      if (!audioContext) { set({ error: '오디오 초기화에 실패했습니다.' }); return false }
+      if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return false }
       if (audioContext.state === 'suspended') await audioContext.resume()
       if (currentSource) { try { currentSource.stop() } catch {} }
       const response = await fetch(url)
@@ -173,8 +173,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       set({ currentBuffer: audioBuffer })
       return true
     } catch (error) {
-      console.error('오디오 로드 실패:', error)
-      set({ error: '오디오 로드에 실패했습니다.' })
+      console.error('Audio load failed:', error)
+      set({ error: 'Failed to load audio. Please check the file or your connection.' })
       return false
     } finally {
       set({ isLoading: false })
@@ -186,7 +186,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     try {
       await get().initAudioContext()
       const { audioContext, currentSource } = get()
-      if (!audioContext) { set({ error: '오디오 초기화에 실패했습니다.' }); return false }
+      if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return false }
       if (audioContext.state === 'suspended') await audioContext.resume()
       if (currentSource) { try { currentSource.stop() } catch {} }
       const arrayBuffer = await file.arrayBuffer()
@@ -194,8 +194,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       set({ currentBuffer: audioBuffer })
       return true
     } catch (error) {
-      console.error('오디오 파일 로드 실패:', error)
-      set({ error: '업로드한 오디오를 불러오지 못했습니다.' })
+      console.error('Audio file load failed:', error)
+      set({ error: 'Failed to load the uploaded audio file. Please try a different file.' })
       return false
     } finally {
       set({ isLoading: false })
@@ -204,7 +204,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   playSegment: async (startSec: number, durationSec: number) => {
     const { currentBuffer, filters, currentSource } = get()
-    if (!currentBuffer || !filters.length) { set({ error: '재생할 오디오가 없습니다.' }); return }
+    if (!currentBuffer || !filters.length) { set({ error: 'No audio loaded. Please select audio first.' }); return }
     await get().initAudioContext()
     const { audioContext } = get()
     if (!audioContext) return
@@ -338,10 +338,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   play: async () => {
     const { currentBuffer, filters, currentSource } = get()
-    if (!currentBuffer || !filters.length) { set({ error: '재생할 오디오가 없습니다.' }); return }
+    if (!currentBuffer || !filters.length) { set({ error: 'No audio loaded. Please select audio first.' }); return }
     await get().initAudioContext()
     const { audioContext } = get()
-    if (!audioContext) { set({ error: '오디오 초기화에 실패했습니다.' }); return }
+    if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return }
     if (audioContext.state === 'suspended') await audioContext.resume()
     if (currentSource) { try { currentSource.stop() } catch {} }
     const source = audioContext.createBufferSource()
