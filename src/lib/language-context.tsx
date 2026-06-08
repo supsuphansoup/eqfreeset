@@ -41,6 +41,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.lang = lang
+    }
+  }, [lang, mounted])
+
   const setLang = (newLang: LangCode) => {
     setLangState(newLang)
     localStorage.setItem('v2_eq-lang', newLang)
