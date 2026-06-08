@@ -79,6 +79,11 @@ export default function TestPage() {
     roundStartTimeRef.current = Date.now()
   }, [currentRound])
   useEffect(() => { if (!isPlaying) setPlayingOption(null) }, [isPlaying])
+  useEffect(() => {
+    if (currentStep !== 'test') {
+      pause()
+    }
+  }, [currentStep, pause])
 
   const groupedDevices = useMemo(() => {
     const groups = new Map<string, typeof filteredDevices>()

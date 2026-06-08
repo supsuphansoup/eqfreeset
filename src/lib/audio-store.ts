@@ -215,7 +215,11 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     source.connect(filters[0])
     source.start(0, startSec, durationSec)
     set({ currentSource: source, isPlaying: true })
-    source.onended = () => set({ isPlaying: false, currentSource: null })
+    source.onended = () => {
+      if (get().currentSource === source) {
+        set({ isPlaying: false, currentSource: null })
+      }
+    }
   },
 
   // 각 구간 PCM 샘플을 BiquadFilter 시뮬레이션으로 대역별 RMS 계산 (FFT 미사용)
@@ -345,7 +349,11 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     source.connect(filters[0])
     source.start(0)
     set({ currentSource: source, isPlaying: true })
-    source.onended = () => set({ isPlaying: false, currentSource: null })
+    source.onended = () => {
+      if (get().currentSource === source) {
+        set({ isPlaying: false, currentSource: null })
+      }
+    }
   },
 
   pause: () => {
