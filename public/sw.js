@@ -1,5 +1,5 @@
 // Service Worker for EQ FreeSet PWA
-const CACHE_VERSION = 'v2.0.0'
+const CACHE_VERSION = 'v2.0.1'
 const STATIC_CACHE = `eqfreeset-static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `eqfreeset-dynamic-${CACHE_VERSION}`
 const ALL_CACHES = [STATIC_CACHE, DYNAMIC_CACHE]
