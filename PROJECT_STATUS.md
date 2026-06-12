@@ -41,7 +41,7 @@ src/
 │   ├── globals.css           # 전역 스타일 (Tailwind + 커스텀 디자인 토큰)
 │   ├── page.tsx              # 홈 (히어로, 3단계 설명, FAQ, 푸터)
 │   ├── test/
-│   │   ├── layout.tsx        # test SEO metadata (index: false)
+│   │   ├── layout.tsx        # test SEO metadata (index: true)
 │   │   └── page.tsx          # 핵심 테스트 플로우 (4단계: device→audio→segment→test)
 │   ├── result/
 │   │   ├── layout.tsx        # result SEO metadata (index: false)
@@ -213,7 +213,8 @@ bayesStd = max(0.5, bayesStd)  // 최소 하한선
 
 - `layout.tsx`: 기본 metadata (OG, Twitter Card, Canonical, Robots, Icons, Manifest)
 - 서브 라우트별 layout에 개별 metadata 선언
-  - `/test`, `/result`: `robots: { index: false }` (색인 제외)
+  - `/test`: 색인 허용 (테스트 시작 페이지이므로 검색 노출 유도)
+  - `/result`: `robots: { index: false }` (색인 제외)
   - `/contact`: 색인 허용
 - `sitemap.ts`: 10개 페이지 동적 사이트맵
 - `robots.ts`: 크롤러 허용 설정
