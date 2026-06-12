@@ -6,10 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/result'],  // 테스트 결과 페이지만 색인 제외 (/test는 허용)
+        disallow: ['/result'],
       },
     ],
     sitemap: 'https://eqfreeset.pages.dev/sitemap.xml',
-    host: 'https://eqfreeset.pages.dev',
   }
 }
