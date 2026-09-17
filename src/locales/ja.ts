@@ -99,6 +99,8 @@ const ja: Locale = {
     formatHint1: '• MP3、WAV、M4A、FLACに対応',
     formatHint2: '• 最大50MBまでアップロード可能',
     formatHint3: '• ファイルはデバイス内のみで処理され、サーバーには送信されません',
+    fileTooLarge: 'ファイルサイズは最大50MBまで対応しています。',
+    invalidFormat: 'サポートされていない音声形式です。(MP3、WAV、M4A、FLACなどに対応)',
   },
   test: {
     headerTitle: '分析',

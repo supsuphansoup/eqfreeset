@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import { useTestStore, useAudioStore, BAYESIAN_TOTAL_ROUNDS } from '@/lib/audio-store'
-import { getAllDevices, findDeviceByName } from '@/lib/device-db'
+import { getAllDevices, findDeviceByName, findDeviceById } from '@/lib/device-db'
 import { useLanguage } from '@/lib/language-context'
 import { Play, Pause, Search, ArrowLeft, Loader2, CheckCircle } from 'lucide-react'
 
@@ -94,8 +94,8 @@ export default function TestContent() {
     return Array.from(groups.entries())
   }, [filteredDevices])
 
-  const handleDeviceSelect = (name: string) => {
-    const device = findDeviceByName(name)
+  const handleDeviceSelect = (idOrName: string) => {
+    const device = findDeviceById(idOrName) || findDeviceByName(idOrName)
     if (device) { setSelectedDevice(device); setCurrentStep('audio') }
   }
   const handleAudioSelect = (type: 'sample' | 'upload') => {
@@ -120,7 +120,26 @@ export default function TestContent() {
 
   // 파일 업로드 → 로드 + 4축 동시 분석
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return
+    const file = e.target.files?.[0]
+    if (!file) return
+    // 동일 파일 재선택 가능하도록 input value 초기화
+    e.target.value = ''
+
+    // 50MB 파일 크기 검증
+    if (file.size > 50 * 1024 * 1024) {
+      useAudioStore.setState({ error: t.upload.fileTooLarge })
+      return
+    }
+
+    // 파일 확장자 및 MIME 타입 검증
+    const validExtensions = ['.mp3', '.wav', '.m4a', '.flac', '.aac', '.ogg', '.webm']
+    const hasValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+    const hasValidMime = file.type.startsWith('audio/') || file.type === ''
+    if (!hasValidExt && !hasValidMime) {
+      useAudioStore.setState({ error: t.upload.invalidFormat })
+      return
+    }
+
     setUploadedFile(file)
     setAnalysisReady(false)
     const success = await loadAudioFile(file)
@@ -149,6 +168,13 @@ export default function TestContent() {
 
   // A/B 재생: getCurrentSegment()로 현재 라운드 최적 구간 자동 선택
   const playOption = async (option: 'A' | 'B') => {
+    // 이미 재생 중인 동일한 옵션을 클릭한 경우 일시정지
+    if (playingOption === option && isPlaying) {
+      pause()
+      setPlayingOption(null)
+      return
+    }
+
     const seg = manualMode
       ? { start: manualStart, duration: manualDuration }
       : getCurrentSegment()
@@ -228,7 +254,7 @@ export default function TestContent() {
                     {devices.map(device => (
                       <button
                         key={device.id}
-                        onClick={() => handleDeviceSelect(device.name)}
+                        onClick={() => handleDeviceSelect(device.id)}
                         className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors group"
                       >
                         <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{device.name}</p>
@@ -383,7 +409,11 @@ export default function TestContent() {
                   max={Math.max(0, (currentBuffer?.duration ?? 60) - manualDuration)}
                   step={1}
                   value={manualStart}
-                  onChange={e => setManualStart(Number(e.target.value))}
+                  onChange={e => {
+                    if (isPlaying) pause()
+                    setPlayingOption(null)
+                    setManualStart(Number(e.target.value))
+                  }}
                   className="w-full accent-primary"
                 />
               </div>
@@ -427,7 +457,14 @@ export default function TestContent() {
             <span>{t.test.bayesianLabel}</span>
             <span className="tabular-nums">{progressPct}%</span>
           </div>
-          <div className="progress-track">
+          <div
+            className="progress-track"
+            role="progressbar"
+            aria-valuenow={progressPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t.test.bayesianLabel}
+          >
             <div className="progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
@@ -459,7 +496,13 @@ export default function TestContent() {
               max={Math.max(0, (currentBuffer?.duration ?? 60) - manualDuration)}
               step={1}
               value={manualStart}
-              onChange={e => { setManualStart(Number(e.target.value)); setHeardA(false); setHeardB(false) }}
+              onChange={e => {
+                if (isPlaying) pause()
+                setPlayingOption(null)
+                setManualStart(Number(e.target.value))
+                setHeardA(false)
+                setHeardB(false)
+              }}
               className="w-full accent-primary"
             />
             <p className="text-xs text-muted-foreground mt-2">
@@ -471,9 +514,20 @@ export default function TestContent() {
 
         {/* 자동 구간 인디케이터 */}
         {!manualMode && (
-          <div className="mb-6 info-box flex items-center gap-2 text-primary text-xs font-medium">
-            <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{t.test.autoSegment}</span>
+          <div className="mb-6 info-box flex items-center justify-between text-xs font-medium">
+            <div className="flex items-center gap-2 text-primary">
+              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{t.test.autoSegment}</span>
+            </div>
+            {(() => {
+              const seg = getCurrentSegment()
+              if (!seg) return null
+              return (
+                <span className="font-mono text-[11px] text-primary bg-primary/10 px-2 py-0.5 rounded-md flex-shrink-0 ml-2">
+                  {formatTime(seg.start)} – {formatTime(seg.start + seg.duration)}
+                </span>
+              )
+            })()}
           </div>
         )}
 
@@ -482,10 +536,13 @@ export default function TestContent() {
           {(['A', 'B'] as const).map(opt => {
             const isActive = playingOption === opt
             const isDone = opt === 'A' ? heardA : heardB
+            const statusText = isActive ? t.test.playing : isDone ? t.test.listened : t.test.tapToPlay
             return (
               <button
                 key={opt}
                 onClick={() => !isLoading && void playOption(opt)}
+                aria-label={`${opt} ${statusText}`}
+                aria-pressed={isActive}
                 className={`choice-card p-4 flex flex-col items-center gap-3 h-full min-h-[120px] ${
                   isActive ? 'choice-card-active border-primary' : isDone ? 'choice-card-done' : ''
                 }`}

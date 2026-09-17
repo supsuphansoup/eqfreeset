@@ -73,6 +73,9 @@ export const metadata: Metadata = {
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
   },
+  verification: {
+    google: 'MfYtcpFq9wJKFj4ZS7fVd9BUDLQXRXIRnU5xV7nF3vE',
+  },
 }
 
 export const viewport = {
@@ -87,9 +90,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
+    <html lang="ko" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <head>
-        {/* 테마 초기화 스크립트 (깜빡임 방지) */}
+        <meta name="google-site-verification" content="MfYtcpFq9wJKFj4ZS7fVd9BUDLQXRXIRnU5xV7nF3vE" />
+        {/* 테마 및 언어 초기화 스크립트 (깜빡임 방지) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -115,6 +119,14 @@ export default function RootLayout({
                   localStorage.removeItem(k);
                   sessionStorage.removeItem(k);
                 });
+
+                // ─── 언어 즉시 적용 ───
+                var storedLang = localStorage.getItem('v2_eq-lang');
+                if (storedLang && ['ko', 'en', 'zh', 'ja'].indexOf(storedLang) !== -1) {
+                  document.documentElement.lang = storedLang;
+                } else {
+                  document.documentElement.lang = 'ko';
+                }
 
                 // ─── 다크/라이트 테마 즉시 적용 (깜빡임 방지) ───
                 var stored = localStorage.getItem('v2_theme');

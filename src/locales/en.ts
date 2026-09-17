@@ -99,6 +99,8 @@ const en: Locale = {
     formatHint1: '• Supports MP3, WAV, M4A, FLAC',
     formatHint2: '• Up to 50MB',
     formatHint3: '• Files are processed locally and never sent to a server',
+    fileTooLarge: 'File size must be 50MB or less.',
+    invalidFormat: 'Unsupported audio format. (Supports MP3, WAV, M4A, FLAC, etc.)',
   },
   test: {
     headerTitle: 'Analysis',

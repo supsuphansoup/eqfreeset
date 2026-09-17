@@ -84,8 +84,9 @@ function ResultPageContent() {
     if (id) {
       try {
         const stored = localStorage.getItem('eqfreeset.results')
-        const results = stored ? JSON.parse(stored) : []
-        const found = results.find((item: any) => item.id === id)
+        const parsed = stored ? JSON.parse(stored) : []
+        const results = Array.isArray(parsed) ? parsed : []
+        const found = results.find((item: any) => item && typeof item === 'object' && item.id === id)
         if (found) {
           const device = findDeviceById(found.deviceId) || {
             id: found.deviceId,
@@ -136,7 +137,8 @@ function ResultPageContent() {
     // 4) 최신 결과 자동 로드 (localStorage의 최신값)
     try {
       const stored = localStorage.getItem('eqfreeset.results')
-      const results = stored ? JSON.parse(stored) : []
+      const parsed = stored ? JSON.parse(stored) : []
+      const results = Array.isArray(parsed) ? parsed : []
       if (results.length > 0) {
         const latest = results[0]
         const device = findDeviceById(latest.deviceId) || {
@@ -235,7 +237,7 @@ function ResultPageContent() {
 
   const handleRetest = () => {
     resetTest()
-    window.location.href = '/test'
+    router.push('/test')
   }
 
   /* ─── No result state (Zustand 미완료 + sessionStorage 복구도 없음) ─── */
@@ -253,7 +255,7 @@ function ResultPageContent() {
       <main className="container mx-auto px-4 max-w-lg py-20 flex-1 flex flex-col items-center justify-center text-center">
         <h1 className="text-xl font-bold mb-2">{r.noResult}</h1>
         <p className="text-sm text-muted-foreground mb-6">{r.noResultDesc}</p>
-        <Button onClick={() => window.location.href = '/test'} className="btn-primary">
+        <Button onClick={() => { resetTest(); router.push('/test') }} className="btn-primary">
           {r.goToTest}
         </Button>
       </main>
@@ -333,7 +335,7 @@ function ResultPageContent() {
             <p className="label-xs mb-4">{r.eqTitle}</p>
 
             {/* Bar chart */}
-            <div className="surface p-4 mb-4">
+            <div className="surface p-4 mb-4" role="img" aria-label={r.eqTitle}>
               <div className="w-full h-40 relative">
                 {/* 0dB line */}
                 <div className="absolute left-0 right-0 top-1/2 h-px bg-border z-10" />

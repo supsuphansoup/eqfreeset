@@ -104,6 +104,8 @@ const ko = {
     formatHint1: '• MP3, WAV, M4A, FLAC 포맷 지원',
     formatHint2: '• 최대 50MB까지 업로드 가능',
     formatHint3: '• 파일은 기기에서만 처리되며 서버에 전송되지 않습니다',
+    fileTooLarge: '파일 크기는 최대 50MB까지 지원됩니다.',
+    invalidFormat: '지원하지 않는 오디오 형식입니다. (MP3, WAV, M4A, FLAC 등 지원)',
   },
   // 테스트 — A/B 테스트
   test: {

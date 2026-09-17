@@ -97,6 +97,7 @@ interface TestState {
   isTestComplete: boolean
   currentAxis: TestAxis
   roundStartTime: number   // 현재 라운드 시작 시각 (Date.now())
+  lastPlayedSegmentStart: number | null // 직전 라운드에 재생된 구간 시작 초 (연속 동일 구간 방지용)
   getCurrentABGains: () => { aGain: number; bGain: number }
   // 현재 라운드에 사용할 세그먼트 (자동 순환 or 수동)
   getCurrentSegment: () => { start: number; duration: number } | null
@@ -208,12 +209,19 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     await get().initAudioContext()
     const { audioContext } = get()
     if (!audioContext) return
-    if (audioContext.state === 'suspended') await audioContext.resume()
-    if (currentSource) { try { currentSource.stop() } catch {} }
+    if (audioContext.state === 'suspended') {
+      try { await audioContext.resume() } catch {}
+    }
+    if (currentSource) {
+      currentSource.onended = null
+      try { currentSource.stop() } catch {}
+    }
+    const safeStart = Math.max(0, Math.min(startSec, Math.max(0, currentBuffer.duration - 0.1)))
+    const safeDuration = Math.min(durationSec, Math.max(0.1, currentBuffer.duration - safeStart))
     const source = audioContext.createBufferSource()
     source.buffer = currentBuffer
     source.connect(filters[0])
-    source.start(0, startSec, durationSec)
+    source.start(0, safeStart, safeDuration)
     set({ currentSource: source, isPlaying: true })
     source.onended = () => {
       if (get().currentSource === source) {
@@ -228,16 +236,18 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     const { currentBuffer } = get()
     if (!currentBuffer) return []
 
-    const freqRanges: Record<TestAxis, [number, number]> = {
-      // 겹치지 않는 경계: 각 축의 고유 특성 구간만 분리
-      bass:       [20,   250],
-      warmth:     [250,  600],   // 저중음 온기감 (600Hz 이하)
-      vocal:      [600,  3500],  // 보컬 명료도 핵심 대역
-      brightness: [3500, 16000], // 에어·존재감 대역
-    }
-
     const sampleRate      = currentBuffer.sampleRate
     const totalDuration   = currentBuffer.duration
+    const maxNyquistFreq  = Math.floor(sampleRate * 0.45)
+
+    const freqRanges: Record<TestAxis, [number, number]> = {
+      // 겹치지 않는 경계: 각 축의 고유 특성 구간만 분리 (나이퀴스트 주파수 안전 마진 적용)
+      bass:       [20,   250],
+      warmth:     [250,  600],   // 저중음 온기감 (600Hz 이하)
+      vocal:      [600,  Math.min(3500, maxNyquistFreq)],  // 보컬 명료도 핵심 대역
+      brightness: [Math.min(3500, maxNyquistFreq - 500), Math.min(16000, maxNyquistFreq)], // 에어·존재감 대역
+    }
+
     const segmentDuration = Math.max(2, Math.min(10, totalDuration))
     const stepSec         = Math.max(1, Math.min(5, Math.floor(totalDuration / 4)))
     const axisKeys: TestAxis[] = ['bass', 'warmth', 'vocal', 'brightness']
@@ -249,8 +259,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
     // 2차 Butterworth 대역통과 필터 계수 계산 (bilinear transform)
     const makeBandpassCoeffs = (freqLow: number, freqHigh: number) => {
-      const fc  = Math.sqrt(freqLow * freqHigh) / sampleRate  // 중심 주파수(정규화)
-      const bw  = (freqHigh - freqLow) / sampleRate           // 대역폭(정규화)
+      const safeLow  = Math.max(10, Math.min(freqLow, maxNyquistFreq - 100))
+      const safeHigh = Math.max(safeLow + 50, Math.min(freqHigh, maxNyquistFreq))
+      const fc  = Math.sqrt(safeLow * safeHigh) / sampleRate  // 중심 주파수(정규화)
+      const bw  = (safeHigh - safeLow) / sampleRate           // 대역폭(정규화)
       const w0  = 2 * Math.PI * fc
       const Q   = fc / bw
       const cos0 = Math.cos(w0)
@@ -276,14 +288,14 @@ export const useAudioStore = create<AudioState>((set, get) => ({
         sumSq += y0 * y0
         x2 = x1; x1 = x0; y2 = y1; y1 = y0
       }
-      return Math.sqrt(sumSq / samples.length)
+      return Math.sqrt(sumSq / (samples.length || 1))
     }
 
     // 전체 RMS (prominence 계산용)
     const totalRMS = (samples: Float32Array): number => {
       let sumSq = 0
       for (let i = 0; i < samples.length; i++) sumSq += samples[i] * samples[i]
-      return Math.sqrt(sumSq / samples.length)
+      return Math.sqrt(sumSq / (samples.length || 1))
     }
 
     const scored: Array<{
@@ -295,7 +307,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     while (offset + segmentDuration <= endLimit) {
       const startSample    = Math.floor(offset * sampleRate)
       const endSample      = Math.min(startSample + Math.floor(segmentDuration * sampleRate), channelData.length)
-      const segmentSamples = channelData.slice(startSample, endSample)
+      // subarray 사용으로 무복사 메모리 뷰 생성 (메모리 절약 및 GC 부하 방지)
+      const segmentSamples = channelData.subarray(startSample, endSample)
       const rmsTotal       = totalRMS(segmentSamples) || 1
 
       const axisScores = {} as Record<TestAxis, number>
@@ -317,7 +330,19 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       offset += stepSec
     }
 
-    if (scored.length === 0) return []
+    // 2초 미만 음원 등 루프에서 세그먼트가 생성되지 않은 경우 전체 음원을 1구간으로 보장
+    if (scored.length === 0) {
+      const fallbackDuration = Math.max(0.1, totalDuration)
+      const eMin = Math.floor(fallbackDuration / 60)
+      const eSec = Math.floor(fallbackDuration % 60)
+      return [{
+        start: 0,
+        duration: fallbackDuration,
+        label: `0:00 ~ ${eMin}:${String(eSec).padStart(2, '0')}`,
+        energy: 1,
+        axisScores: { bass: 1, warmth: 1, vocal: 1, brightness: 1 }
+      }]
+    }
 
     // 에너지 정규화 (0~1)
     const maxE  = Math.max(...scored.map(r => r.energy))
@@ -325,14 +350,43 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     const range = maxE - minE || 1
     const normalized: AnalyzedSegment[] = scored.map(r => ({ ...r, energy: (r.energy - minE) / range }))
 
-    // 겹치지 않는 상위 3구간
-    const sortedSegs = [...normalized].sort((a, b) => b.energy - a.energy)
+    // [다양성 강화 알고리즘]: 4개 축 각각에서 가장 두드러진 고유 구간 2개씩 선별 + 전체 하이라이트 구간 결합 (총 6~10개 세그먼트 풀 생성)
     const selected: AnalyzedSegment[] = []
-    for (const seg of sortedSegs) {
-      const overlaps = selected.some(s => Math.abs(s.start - seg.start) < segmentDuration)
-      if (!overlaps) selected.push(seg)
-      if (selected.length >= 3) break
+    const isOverlapping = (start: number, factor = 0.6) =>
+      selected.some(s => Math.abs(s.start - start) < segmentDuration * factor)
+
+    // 1) 각 축(bass, warmth, vocal, brightness)별 특화 구간 선별 (각 축당 최대 2개)
+    for (const ax of axisKeys) {
+      const axisSorted = [...normalized].sort((a, b) => b.axisScores[ax] - a.axisScores[ax])
+      let addedForAxis = 0
+      for (const seg of axisSorted) {
+        if (!isOverlapping(seg.start, 0.6)) {
+          selected.push(seg)
+          addedForAxis++
+          if (addedForAxis >= 2) break
+        }
+      }
     }
+
+    // 2) 전체 에너지 상위 구간 추가 (최대 2개 추가, 세그먼트 풀 확장)
+    const energySorted = [...normalized].sort((a, b) => b.energy - a.energy)
+    for (const seg of energySorted) {
+      if (!isOverlapping(seg.start, 0.5)) {
+        selected.push(seg)
+        if (selected.length >= 8) break
+      }
+    }
+
+    // 만약 선택된 구간이 4개 미만이라면 완화하여 최소 4개 이상 보장
+    if (selected.length < 4) {
+      for (const seg of energySorted) {
+        if (!selected.some(s => Math.abs(s.start - seg.start) < segmentDuration * 0.3)) {
+          selected.push(seg)
+          if (selected.length >= 4) break
+        }
+      }
+    }
+
     return selected.sort((a, b) => a.start - b.start)
   },
 
@@ -342,8 +396,13 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     await get().initAudioContext()
     const { audioContext } = get()
     if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return }
-    if (audioContext.state === 'suspended') await audioContext.resume()
-    if (currentSource) { try { currentSource.stop() } catch {} }
+    if (audioContext.state === 'suspended') {
+      try { await audioContext.resume() } catch {}
+    }
+    if (currentSource) {
+      currentSource.onended = null
+      try { currentSource.stop() } catch {}
+    }
     const source = audioContext.createBufferSource()
     source.buffer = currentBuffer
     source.connect(filters[0])
@@ -415,7 +474,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   cleanup: () => {
     const { currentSource, audioContext } = get()
-    if (currentSource) { try { currentSource.stop() } catch {} }
+    if (currentSource) {
+      currentSource.onended = null
+      try { currentSource.stop() } catch {}
+    }
     // set 먼저 호출해 참조를 null로 교체한 후 close()
     set({
       audioContext: null, currentSource: null, gainNode: null,
@@ -431,9 +493,10 @@ function saveResultToLocalStorage(result: TestResult) {
   if (typeof window === 'undefined') return
   try {
     const stored = localStorage.getItem('eqfreeset.results')
-    const results: TestResult[] = stored ? JSON.parse(stored) : []
+    const parsed = stored ? JSON.parse(stored) : []
+    const results: TestResult[] = Array.isArray(parsed) ? parsed : []
     // Remove if duplicate ID exists
-    const filtered = results.filter(r => r.id !== result.id)
+    const filtered = results.filter(r => r && typeof r === 'object' && r.id !== result.id)
     // Limit to 50 items
     if (filtered.length >= 50) {
       filtered.pop()
@@ -464,6 +527,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   isTestComplete: false,
   currentAxis: 'bass',
   roundStartTime: Date.now(),
+  lastPlayedSegmentStart: null,
 
   // A = mean - std, B = mean + std
   getCurrentABGains: () => {
@@ -475,14 +539,33 @@ export const useTestStore = create<TestState>((set, get) => ({
 
   // 현재 라운드에 사용할 세그먼트
   // - manualMode ON : 사용자가 지정한 selectedSegment
-  // - manualMode OFF: 현재 축의 axisScore 높은 순으로 정렬 후 라운드마다 순환
+  // - manualMode OFF: 현재 축의 특화도 상위 후보군 안에서 축 등장 횟수 기반 순환 + 직전 라운드 회피
   getCurrentSegment: () => {
-    const { manualMode, selectedSegment, segments, currentRound, currentAxis } = get()
+    const { manualMode, selectedSegment, segments, currentAxis, responses, lastPlayedSegmentStart } = get()
     if (manualMode) return selectedSegment
     if (segments.length === 0) return null
+
+    // 현재 축이 지금까지 몇 번 테스트되었는지 카운트
+    const axisCount = responses.filter(r => r.axis === currentAxis).length
+
+    // 현재 축의 특화도 점수 기준으로 정렬
     const sorted = [...segments].sort((a, b) => b.axisScores[currentAxis] - a.axisScores[currentAxis])
-    const seg = sorted[(currentRound - 1) % sorted.length]
-    return { start: seg.start, duration: seg.duration }
+    const topCandidates = sorted.slice(0, Math.min(3, sorted.length))
+
+    // 축 등장 횟수 기반 순환 인덱스
+    const baseIndex = axisCount % topCandidates.length
+
+    // 직전 라운드에 들었던 구간과 8초 이상 차이나는 구간 우선 선택 (연속 중복 방지)
+    let chosen = topCandidates[baseIndex]
+    for (let i = 0; i < topCandidates.length; i++) {
+      const candidate = topCandidates[(baseIndex + i) % topCandidates.length]
+      if (lastPlayedSegmentStart === null || Math.abs(candidate.start - lastPlayedSegmentStart) >= 8) {
+        chosen = candidate
+        break
+      }
+    }
+
+    return { start: chosen.start, duration: chosen.duration }
   },
 
   setCurrentStep:     (step)    => set({ currentStep: step }),
@@ -516,11 +599,14 @@ export const useTestStore = create<TestState>((set, get) => ({
       newAxisStates[a].bayesStd >= newAxisStates[b].bayesStd ? a : b
     )
 
+    const currentSeg = state.getCurrentSegment()
+
     set({
       axisStates: newAxisStates,
       currentRound: currentRound + 1,
       currentAxis: nextAxis,
       roundStartTime: Date.now(),
+      lastPlayedSegmentStart: currentSeg ? currentSeg.start : null,
       responses: [...state.responses, {
         round: currentRound, axis: currentAxis, choice,
         responseTime: Date.now() - state.roundStartTime,
@@ -597,6 +683,7 @@ export const useTestStore = create<TestState>((set, get) => ({
     isTestComplete: false,
     currentAxis: 'bass',
     roundStartTime: Date.now(),
+    lastPlayedSegmentStart: null,
   }),
 
   resetTest: () => set({
@@ -616,5 +703,6 @@ export const useTestStore = create<TestState>((set, get) => ({
     isTestComplete: false,
     currentAxis: 'bass',
     roundStartTime: Date.now(),
+    lastPlayedSegmentStart: null,
   }),
 }))

@@ -32,6 +32,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "flex items-center justify-center flex-1 py-2 text-xs font-medium transition-colors duration-150",
                 isActive

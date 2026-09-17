@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/result'],
+        disallow: ['/result/', '/result'],
       },
     ],
     sitemap: 'https://eqfreeset.pages.dev/sitemap.xml',

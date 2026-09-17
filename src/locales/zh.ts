@@ -99,6 +99,8 @@ const zh: Locale = {
     formatHint1: '• 支持 MP3、WAV、M4A、FLAC 格式',
     formatHint2: '• 最大支持 50MB',
     formatHint3: '• 文件仅在本地处理，不会上传至服务器',
+    fileTooLarge: '文件大小不能超过 50MB。',
+    invalidFormat: '不支持的音频格式。（支持 MP3、WAV、M4A、FLAC 等）',
   },
   test: {
     headerTitle: '分析',
