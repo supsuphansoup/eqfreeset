@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { GUIDES } from '@/lib/guides'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://eqfreeset.pages.dev'
@@ -41,23 +42,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/guide/earphone-tips/`,
+      url: `${baseUrl}/guide/`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'weekly',
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/guide/hearing-health/`,
+    ...GUIDES.map((g) => ({
+      url: `${baseUrl}/guide/${g.slug}/`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'monthly' as const,
       priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/guide/eq-presets/`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
+    })),
     {
       url: `${baseUrl}/license/`,
       lastModified: new Date(),

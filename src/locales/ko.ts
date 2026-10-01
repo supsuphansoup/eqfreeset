@@ -42,6 +42,8 @@ const ko = {
     faq3A: '테스트가 완료되면 10밴드 그래픽 EQ 또는 파라메트릭 EQ(PEQ) 값을 제공합니다. 이를 스마트폰의 기본 설정, 스트리밍 앱(Spotify, Apple Music 등), 또는 음향기기 전용앱에 입력하여 바로 사용할 수 있습니다.',
     ctaReadInfo: '📚 정보글 읽기',
     ctaContact: '💬 개발자와 소통',
+    guidesTitle: '가이드 읽어보기',
+    allGuides: '모든 가이드 보기 →',
     footerTerms: '이용약관',
     footerPrivacy: '개인정보 처리방침',
     footerLicense: 'AutoEq 라이선스',

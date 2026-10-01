@@ -11,9 +11,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { AdBanner } from '@/components/ad-banner'
+import { ADSENSE_CONFIG } from '@/lib/ad-config'
+import { GUIDES } from '@/lib/guides'
 
 export default function HomeContent() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const h = t.home
 
   return (
@@ -94,6 +97,31 @@ export default function HomeContent() {
         {/* Divider */}
         <div className="border-t border-border" />
 
+        {/* Guides */}
+        <section className="py-12 fade-up">
+          <p className="label-xs mb-6">{h.guidesTitle}</p>
+          <div className="space-y-3">
+            {GUIDES.slice(0, 6).map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/guide/${guide.slug}`}
+                className="block py-3 border-b border-border group"
+              >
+                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+                  {guide.title[lang]} →
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{guide.desc[lang]}</p>
+              </Link>
+            ))}
+          </div>
+          <Link href="/guide" className="inline-block mt-4 text-sm text-primary font-medium hover:underline underline-offset-4 transition-colors">
+            {h.allGuides}
+          </Link>
+        </section>
+
+        {/* Divider */}
+        <div className="border-t border-border" />
+
         {/* FAQ */}
         <section className="py-12 fade-up">
           <p className="label-xs mb-6">{h.faqTitle}</p>
@@ -125,6 +153,9 @@ export default function HomeContent() {
           </Accordion>
         </section>
 
+        {/* AdSense Banner */}
+        <AdBanner slot={ADSENSE_CONFIG.SLOTS.HOME_BOTTOM} className="my-6" />
+
         {/* Divider */}
         <div className="border-t border-border" />
 
@@ -137,17 +168,6 @@ export default function HomeContent() {
             {h.ctaContact} →
           </Link>
         </section>
-
-        {/* Footer */}
-        <footer className="border-t border-border py-8 text-xs text-muted-foreground">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">
-            <Link href="/terms" className="hover:text-foreground transition-colors">{h.footerTerms}</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">{h.footerPrivacy}</Link>
-            <Link href="/license" className="hover:text-foreground transition-colors">{h.footerLicense}</Link>
-          </div>
-          <p className="text-muted-foreground/60">{h.footerSuno}</p>
-          <p className="text-muted-foreground/60 mt-0.5">{h.footerCopyright}</p>
-        </footer>
       </div>
     </main>
   )

@@ -28,6 +28,8 @@ const CONTENT: Record<LangCode, PrivacyData> = {
         body: [
           '본 서비스는 Google AdSense를 통해 광고를 게재합니다. Google을 비롯한 제3자 광고 업체는 쿠키를 사용하여 맞춤형 광고를 제공할 수 있습니다.',
           '광고 게재 과정에서 Google은 방문 페이지 URL 및 시간, 브라우저 유형 및 운영체제, 익명화된 IP 주소, 쿠키 및 광고 식별자 등을 수집할 수 있습니다.',
+          'Google을 포함한 제3자 공급업체는 쿠키를 사용하여 사용자가 본 웹사이트 또는 다른 웹사이트를 이전에 방문한 기록을 바탕으로 광고를 게재합니다. Google은 광고 쿠키를 사용하여 사용자의 본 사이트 및 인터넷상의 다른 사이트 방문 기록에 기반한 광고를 사용자와 파트너에게 제공할 수 있습니다.',
+          '사용자는 Google 광고 설정(https://adssettings.google.com)에서 맞춤 광고를 해제할 수 있으며, www.aboutads.info/choices 를 방문하여 제3자 공급업체의 맞춤 광고용 쿠키 사용을 해제할 수도 있습니다. 자세한 내용은 Google의 광고 정책(https://policies.google.com/technologies/ads)에서 확인할 수 있습니다.',
         ],
       },
       {
@@ -77,6 +79,8 @@ const CONTENT: Record<LangCode, PrivacyData> = {
         heading: '2. Advertising & Cookies (Google AdSense)',
         body: [
           'This service displays ads via Google AdSense. Google and third-party advertisers may use cookies to serve personalized ads based on your browsing history.',
+          'Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website or other websites. Google’s use of advertising cookies enables it and its partners to serve ads to you based on your visits to this site and/or other sites on the Internet.',
+          'You may opt out of personalized advertising by visiting Google Ads Settings (https://adssettings.google.com), or opt out of a third-party vendor’s use of cookies for personalized advertising by visiting www.aboutads.info/choices. For more information, see Google’s advertising policy (https://policies.google.com/technologies/ads).',
           'During ad serving, Google may collect: visited page URLs and timestamps, browser type and OS, anonymized IP address, and advertising identifiers.',
         ],
       },
@@ -127,6 +131,8 @@ const CONTENT: Record<LangCode, PrivacyData> = {
         heading: '2. 广告与Cookie（Google AdSense）',
         body: [
           '本服务通过Google AdSense投放广告。Google及第三方广告商可能使用Cookie提供个性化广告。',
+          '包括Google在内的第三方供应商会使用Cookie，根据用户此前对本网站或其他网站的访问记录投放广告。Google通过广告Cookie，可根据用户对本网站及互联网上其他网站的访问情况，向用户投放其本身及合作伙伴的广告。',
+          '用户可访问Google广告设置（https://adssettings.google.com）停用个性化广告，或访问 www.aboutads.info/choices 停用第三方供应商用于个性化广告的Cookie。详情请参阅Google广告政策（https://policies.google.com/technologies/ads）。',
           '广告投放过程中，Google可能收集：访问页面URL及时间、浏览器类型和操作系统、匿名化IP地址及广告标识符。',
         ],
       },
@@ -176,7 +182,9 @@ const CONTENT: Record<LangCode, PrivacyData> = {
       {
         heading: '2. 広告とCookie（Google AdSense）',
         body: [
-          '本サービスはGoogle AdSenseを通じて広告を掲載します。Googleおよび第三者広告会社は、CookieによりパーソナライズされたI広告を提供する場合があります。',
+          '本サービスはGoogle AdSenseを通じて広告を掲載します。Googleおよび第三者広告会社は、Cookieによりパーソナライズされた広告を提供する場合があります。',
+          'Googleなどの第三者配信事業者は、Cookieを使用して、ユーザーが本サイトや他のサイトに過去にアクセスした際の情報に基づいて広告を配信します。Googleは広告Cookieを使用することにより、ユーザーが本サイトやインターネット上の他のサイトにアクセスした際の情報に基づいて、Googleやそのパートナーが適切な広告を表示できます。',
+          'ユーザーは、Googleの広告設定（https://adssettings.google.com）でパーソナライズ広告を無効にできます。また、www.aboutads.info/choices にアクセスすれば、第三者配信事業者がパーソナライズ広告の掲載で使用するCookieを無効にできます。詳しくはGoogleの広告ポリシー（https://policies.google.com/technologies/ads）をご覧ください。',
           '広告配信の過程でGoogleは、訪問ページのURLと時刻、ブラウザの種類とOS、匿名化されたIPアドレス、広告IDなどを収集する場合があります。',
         ],
       },

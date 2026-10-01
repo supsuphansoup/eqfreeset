@@ -61,9 +61,12 @@ function AccordionContent({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Content>) {
   return (
+    // forceMount: 접힌 상태에서도 정적 HTML에 본문이 포함되도록 항상 렌더링하고 CSS로만 숨김
+    // (크롤러가 FAQ 답변 텍스트를 읽을 수 있어야 함)
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
+      forceMount
+      className="overflow-hidden text-sm data-[state=closed]:hidden"
       {...props}
     >
       <div

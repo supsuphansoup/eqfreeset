@@ -41,6 +41,8 @@ const zh: Locale = {
     faq3A: '测试完成后，您将获得 10 频段图形 EQ 或参数 EQ（PEQ）数值。将其输入手机默认设置、流媒体 App（Spotify、Apple Music 等）或设备专属 App 即可使用。',
     ctaReadInfo: '📚 阅读指南',
     ctaContact: '💬 联系开发者',
+    guidesTitle: '阅读指南',
+    allGuides: '查看全部指南 →',
     footerTerms: '服务条款',
     footerPrivacy: '隐私政策',
     footerLicense: 'AutoEq 许可证',

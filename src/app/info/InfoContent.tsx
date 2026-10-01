@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { useLanguage, type LangCode } from '@/lib/language-context'
+import { GUIDES } from '@/lib/guides'
 
 type InfoData = {
   label: string
@@ -39,9 +40,6 @@ type InfoData = {
     }
     moreGuides: {
       heading: string
-      earphoneTips: { title: string; sub: string }
-      hearingHealth: { title: string; sub: string }
-      eqPresets: { title: string; sub: string }
     }
     contact: string
   }
@@ -105,9 +103,6 @@ const CONTENT: Record<LangCode, InfoData> = {
       },
       moreGuides: {
         heading: '더 읽어볼 것들',
-        earphoneTips: { title: '이어폰 관리 및 팁', sub: '팁 종류, 드라이버, 보관법' },
-        hearingHealth: { title: '청력 보호 가이드', sub: '소음성 난청 예방, 60/60 법칙' },
-        eqPresets: { title: '장르별 EQ 프리셋', sub: '팝, 락, EDM, 클래식별 튜닝 포인트' },
       },
       contact: '개발자와 소통 →',
     },
@@ -169,9 +164,6 @@ const CONTENT: Record<LangCode, InfoData> = {
       },
       moreGuides: {
         heading: 'Further Reading',
-        earphoneTips: { title: 'Earphone Care & Tips', sub: 'Tip types, drivers, storage' },
-        hearingHealth: { title: 'Hearing Protection Guide', sub: 'Noise-induced hearing loss, 60/60 rule' },
-        eqPresets: { title: 'Genre EQ Presets', sub: 'Tuning tips for pop, rock, EDM, classical' },
       },
       contact: 'Contact Developer →',
     },
@@ -233,9 +225,6 @@ const CONTENT: Record<LangCode, InfoData> = {
       },
       moreGuides: {
         heading: '延伸阅读',
-        earphoneTips: { title: '耳机使用与保养', sub: '耳套类型、驱动单元、存放方法' },
-        hearingHealth: { title: '听力保护指南', sub: '噪音性耳鸣预防、60/60法则' },
-        eqPresets: { title: '流派EQ预设', sub: '流行、摇滚、EDM、古典调音要点' },
       },
       contact: '联系开发者 →',
     },
@@ -297,9 +286,6 @@ const CONTENT: Record<LangCode, InfoData> = {
       },
       moreGuides: {
         heading: 'さらに読む',
-        earphoneTips: { title: 'イヤホンの管理とヒント', sub: 'イヤーピースの種類、ドライバー、保管方法' },
-        hearingHealth: { title: '聴力保護ガイド', sub: '騒音性難聴の予防、60/60ルール' },
-        eqPresets: { title: 'ジャンル別EQプリセット', sub: 'ポップ、ロック、EDM、クラシックのチューニングポイント' },
       },
       contact: '開発者に連絡 →',
     },
@@ -434,11 +420,7 @@ export default function InfoContent() {
         <section id="guides">
           <h2 className="text-base font-semibold mb-4 text-foreground">{s.moreGuides.heading}</h2>
           <div className="space-y-3">
-            {([
-              { href: '/guide/earphone-tips', ...s.moreGuides.earphoneTips },
-              { href: '/guide/hearing-health', ...s.moreGuides.hearingHealth },
-              { href: '/guide/eq-presets', ...s.moreGuides.eqPresets },
-            ]).map((item) => (
+            {GUIDES.map((g) => ({ href: `/guide/${g.slug}`, title: g.title[lang], sub: g.desc[lang] })).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

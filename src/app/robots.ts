@@ -8,6 +8,10 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/result/', '/result'],
       },
+      {
+        userAgent: 'Mediapartners-Google',
+        allow: '/',
+      },
     ],
     sitemap: 'https://eqfreeset.pages.dev/sitemap.xml',
   }

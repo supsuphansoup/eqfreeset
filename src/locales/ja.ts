@@ -41,6 +41,8 @@ const ja: Locale = {
     faq3A: 'テスト完了後、10バンドのグラフィックEQまたはパラメトリックEQ（PEQ）の値が提供されます。スマートフォンの設定、ストリーミングアプリ（Spotify、Apple Musicなど）、またはデバイス専用アプリに入力してお使いください。',
     ctaReadInfo: '📚 ガイドを読む',
     ctaContact: '💬 開発者に連絡',
+    guidesTitle: 'ガイドを読む',
+    allGuides: 'すべてのガイドを見る →',
     footerTerms: '利用規約',
     footerPrivacy: 'プライバシーポリシー',
     footerLicense: 'AutoEqライセンス',

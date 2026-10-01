@@ -5,6 +5,7 @@ import './globals.css'
 import { BottomNav } from '@/components/bottom-nav'
 import { BottomNavSpacer } from '@/components/bottom-nav-spacer'
 import { PWAInstall } from '@/components/pwa-install'
+import { SiteFooter } from '@/components/site-footer'
 import { ThemeProvider } from '@/components/theme-provider'
 import { LanguageProvider } from '@/lib/language-context'
 import { cn } from "@/lib/utils";
@@ -93,6 +94,7 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <head>
         <meta name="google-site-verification" content="MfYtcpFq9wJKFj4ZS7fVd9BUDLQXRXIRnU5xV7nF3vE" />
+        <meta name="google-adsense-account" content="ca-pub-3853805636561789" />
         {/* 테마 및 언어 초기화 스크립트 (깜빡임 방지) */}
         <script
           dangerouslySetInnerHTML={{
@@ -142,6 +144,7 @@ export default function RootLayout({
         />
         {/* Google AdSense */}
         <Script
+          id="google-adsense"
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3853805636561789"
           crossOrigin="anonymous"
@@ -179,6 +182,7 @@ export default function RootLayout({
             <PWAInstall />
             <div className="min-h-screen">
               {children}
+              <SiteFooter />
               <BottomNavSpacer />
             </div>
             <BottomNav />

@@ -41,6 +41,8 @@ const en: Locale = {
     faq3A: 'After the test, you\'ll receive 10-band graphic EQ or parametric EQ (PEQ) values. Input these into your phone\'s settings, streaming app (Spotify, Apple Music, etc.), or device-specific app.',
     ctaReadInfo: '📚 Read the Guide',
     ctaContact: '💬 Contact Developer',
+    guidesTitle: 'Read the Guides',
+    allGuides: 'View all guides →',
     footerTerms: 'Terms of Service',
     footerPrivacy: 'Privacy Policy',
     footerLicense: 'AutoEq License',
