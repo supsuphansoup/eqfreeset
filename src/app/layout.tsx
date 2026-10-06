@@ -14,10 +14,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swa
 
 export const metadata: Metadata = {
   title: {
-    default: 'EQ FreeSet — Find Your Perfect Earphone & Headphone EQ in 3 Minutes',
+    default: 'EQ FreeSet — 3분 만에 찾는 내 이어폰·헤드폰 맞춤 EQ',
     template: '%s | EQ FreeSet',
   },
-  description: 'Free personalized equalizer settings for your earphones and headphones. Find your perfect EQ through A/B blind testing in just 3 minutes. Download results as JSON instantly.',
+  description: '이어폰과 헤드폰에 맞는 이퀄라이저 설정을 무료로 찾아보세요. 3분 A/B 블라인드 테스트로 내 귀에 맞는 EQ 값을 받고 JSON으로 바로 내려받을 수 있습니다.',
   keywords: [
     'EQ settings', 'equalizer', 'earphone EQ', 'headphone EQ', 'A/B test', 'audio optimization',
     'sound tuning', 'AutoEQ', 'EQ FreeSet', 'free EQ', 'personalized EQ', 'hearing test',
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'EQ FreeSet — Find Your Perfect EQ in 3 Minutes',
-    description: 'Free personalized equalizer settings for your earphones and headphones via A/B blind testing. Download results as JSON instantly.',
+    title: 'EQ FreeSet — 3분 만에 찾는 내 맞춤 EQ',
+    description: 'A/B 블라인드 테스트로 이어폰·헤드폰에 맞는 이퀄라이저 설정을 무료로 찾아보세요. 결과는 JSON으로 바로 내려받을 수 있습니다.',
     url: 'https://eqfreeset.pages.dev',
     siteName: 'EQ FreeSet',
     images: [
@@ -51,17 +51,17 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'EQ FreeSet — Find your perfect equalizer settings in 3 minutes',
+        alt: 'EQ FreeSet — 3분 만에 내 맞춤 이퀄라이저 설정 찾기',
         type: 'image/png',
       }
     ],
-    locale: 'en_US',
+    locale: 'ko_KR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EQ FreeSet — Find Your Perfect EQ in 3 Minutes',
-    description: 'Free personalized equalizer settings for earphones and headphones. A/B blind test in 3 minutes.',
+    title: 'EQ FreeSet — 3분 만에 찾는 내 맞춤 EQ',
+    description: '이어폰·헤드폰 맞춤 이퀄라이저 설정을 3분 A/B 블라인드 테스트로 무료로 찾아보세요.',
     images: ['/og-image.png'],
   },
   manifest: '/manifest.json',

@@ -3,8 +3,8 @@ import { GuideArticleView } from '@/components/guide-article'
 import content from '@/lib/guides/content/bluetooth-codecs'
 
 export const metadata: Metadata = {
-  title: 'Bluetooth Codecs Compared: SBC, AAC, aptX, LDAC',
-  description: 'Compare Bluetooth audio codecs SBC, AAC, aptX, LDAC and LC3: bitrate, latency, iPhone vs Android support, and how much codecs really affect sound quality.',
+  title: '블루투스 코덱 비교: SBC, AAC, aptX, LDAC',
+  description: 'SBC, AAC, aptX, LDAC, LC3 블루투스 코덱의 전송률과 지연, 아이폰·안드로이드 지원 차이, 코덱이 실제 음질에 미치는 영향을 비교합니다.',
   alternates: { canonical: '/guide/bluetooth-codecs/' },
 }
 
