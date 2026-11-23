@@ -60,8 +60,8 @@ const content: GuideContent = {
       {
         heading: '5. EQ FreeSet 테스트에 적용된 원칙',
         blocks: [
-          { type: 'p', text: 'EQ FreeSet의 A/B 테스트는 위의 원칙을 바탕으로 설계되었습니다. 테스트 중에는 A와 B에 적용된 dB 값을 보여 주지 않아 숫자에 대한 선입견 없이 소리만으로 고르게 합니다. EQ로 특정 대역을 올리면 전체 음량이 커지므로, 올린 만큼 전체 볼륨을 보정해 단지 더 크게 들린다는 이유로 선택되는 일을 줄입니다.' },
-          { type: 'p', text: '또한 저음, 따뜻함, 보컬, 밝기 중 지금 비교하는 특성이 잘 드러나는 음악 구간을 자동으로 골라 들려주고, 차이를 모르겠다면 "비슷함"을 선택할 수 있습니다. 16번의 선택이 쌓일수록 각 특성의 탐색 범위가 좁혀져, 마지막에는 내 귀가 실제로 선호한 방향의 EQ가 남습니다.' },
+          { type: 'p', text: 'EQ FreeSet은 A/B의 dB 값을 숨기고 같은 구간을 비교합니다. 두 후보를 실제 필터로 렌더링한 뒤 RMS 음량을 낮은 쪽에 맞춥니다. 더 큰 소리를 선호하는 영향을 줄이기 위한 처리이며, 체감 음량이 완전히 같다는 뜻은 아닙니다.' },
+          { type: 'p', text: '저음·온기·보컬·밝기의 대역 에너지를 바탕으로 비교 구간을 고릅니다. 둘 다 비슷하게 좋으면 “둘 다 비슷하게 좋음”, 차이가 안 들리거나 판단하기 어려우면 “판단 어려움”을 선택하세요. 기본 16회 후 기본 EQ와 전체 추천 EQ를 다시 비교해 저장하며, 원하면 최대 32회까지 더 비교하거나 직전 선택을 취소할 수 있습니다. 추천값이 모든 음악에서 최적인 것은 아닙니다.' },
         ],
       },
     ],
@@ -125,8 +125,8 @@ const content: GuideContent = {
       {
         heading: '5. How the EQ FreeSet Test Applies These Principles',
         blocks: [
-          { type: 'p', text: 'The EQ FreeSet A/B test is built on these principles. During the test, the dB values applied to A and B are hidden, so you choose by sound alone without being influenced by numbers. Because boosting a band with EQ raises overall loudness, the test compensates the overall volume by the boost, reducing the chance that an option wins just because it sounds louder.' },
-          { type: 'p', text: 'It also automatically picks music passages where the trait being compared (bass, warmth, vocal or brightness) stands out, and you can choose "Similar" when you cannot hear a difference. As your 16 choices add up, the search range for each trait narrows, leaving an EQ that reflects what your ears actually preferred.' },
+          { type: 'p', text: 'EQ FreeSet hides the A/B dB values and compares the same passage. Both candidates are rendered through the actual filters and attenuated to the lower RMS level. This reduces level bias without guaranteeing identical perceived loudness.' },
+          { type: 'p', text: 'Passages are selected using band energy for bass, warmth, vocal and brightness. Choose Similar when you like both equally; choose Cannot judge if you cannot hear a difference or decide. After 16 comparisons, compare the device EQ with the whole proposal before saving. You can undo the last choice or extend to 32 comparisons. The proposal is not guaranteed to be optimal for every track.' },
         ],
       },
     ],
@@ -190,8 +190,8 @@ const content: GuideContent = {
       {
         heading: '5. EQ FreeSet测试运用的原则',
         blocks: [
-          { type: 'p', text: 'EQ FreeSet的A/B测试正是基于这些原则设计的。测试中不显示A和B所应用的dB数值，让你不受数字先入为主的影响，只凭声音选择。用EQ提升某个频段会使整体音量变大，因此测试会按提升量补偿整体音量，减少仅因听起来更响而被选中的情况。' },
-          { type: 'p', text: '此外，测试会自动挑选能突出当前比较特性（低音、温暖感、人声、明亮度）的音乐段落播放；听不出差异时可以选择“差不多”。随着16次选择的累积，每个特性的搜索范围逐渐缩小，最后留下的就是你的耳朵真正偏好的EQ。' },
+          { type: 'p', text: 'EQ FreeSet隐藏A/B的dB数值，并比较相同片段。两种设置均经过实际滤波器渲染，再衰减至较低的RMS音量，以减少音量偏差。这不保证感知响度完全相同。' },
+          { type: 'p', text: '测试根据低音、温暖感、人声和明亮度的频段能量选择片段。两者同样喜欢时选“差不多”；听不出区别或难以判断时请跳过。比较16次后，再比较设备基础EQ与完整推荐EQ后保存。可以撤销上次选择，或增加至32次比较。推荐值不保证适合所有音乐。' },
         ],
       },
     ],
@@ -255,8 +255,8 @@ const content: GuideContent = {
       {
         heading: '5. EQ FreeSetのテストに取り入れた原則',
         blocks: [
-          { type: 'p', text: 'EQ FreeSetのA/Bテストは、これらの原則をもとに設計されています。テスト中はAとBに適用されたdB値を表示しないため、数字への先入観なしに音だけで選べます。EQで特定の帯域を上げると全体の音量が大きくなるので、上げた分だけ全体の音量を補正し、単に大きく聞こえるという理由で選ばれることを減らしています。' },
-          { type: 'p', text: 'さらに、低音・温かみ・ボーカル・明るさのうち、いま比べている特性がよく表れる音楽の区間を自動で選んで再生し、違いがわからなければ「同じくらい」を選べます。16回の選択が積み重なるほど各特性の探索範囲が狭まり、最後には自分の耳が実際に好んだ方向のEQが残ります。' },
+          { type: 'p', text: 'EQ FreeSetはA/BのdB値を隠し、同じ区間を比較します。両方を実際のフィルターでレンダリングし、低い方のRMS音量に合わせて減衰させます。音量による偏りを減らす処理であり、知覚上の音量が完全に同じとは限りません。' },
+          { type: 'p', text: '低音・温かみ・ボーカル・明るさの帯域エネルギーから区間を選びます。両方同じくらい好きなら「同じくらい」、違いが聞こえない・判断が難しい場合はスキップしてください。16回比較した後、機器の基本EQとおすすめ全体を聴き比べて保存します。直前の選択を取り消すか、最大32回まで追加比較できます。すべての音楽で最適になる保証はありません。' },
         ],
       },
     ],

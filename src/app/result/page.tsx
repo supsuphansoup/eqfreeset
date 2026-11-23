@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useTestStore, EQBand, BAYESIAN_TOTAL_ROUNDS } from '@/lib/audio-store'
+import { useTestStore, EQBand, TestResult, BAYESIAN_TOTAL_ROUNDS } from '@/lib/audio-store'
+import { combineEQ, EQ_Q, getPreampDb } from '@/lib/eq-processing'
+import { decodeSharedEQ, encodeSharedEQ, validBands } from '@/lib/result-share'
+import { experienceCopy } from '@/lib/experience-copy'
 import { useLanguage } from '@/lib/language-context'
 import { findDeviceById } from '@/lib/device-db'
 import { Download, Share2, RotateCcw, Home, Loader2 } from 'lucide-react'
@@ -36,8 +40,10 @@ const defaultEqBands: EQBand[] = [
 function buildResults(
   device: { name: string; baseEQ: EQBand[] } | null,
   personalizationDelta: EQBand[] | undefined,
-  axisDesc: Record<string, { B: string; A: string; similar: string }>
+  axisDesc: Record<string, { B: string; A: string; similar: string }>,
+  finalEQ?: EQBand[]
 ) {
+  if (finalEQ !== undefined && !validBands(finalEQ)) throw new Error('Invalid saved EQ snapshot')
   const THRESHOLD = 1.5
   const deltaByAxis: Record<string, number> = {
     bass:       personalizationDelta ? ((personalizationDelta[0]?.gain ?? 0) + (personalizationDelta[1]?.gain ?? 0)) / 2 : 0,
@@ -55,10 +61,7 @@ function buildResults(
   })
 
   const baseBands = device?.baseEQ ?? defaultEqBands
-  const bands: EQBand[] = baseBands.map((band, index) => {
-    const deltaGain = personalizationDelta ? personalizationDelta[index]?.gain || 0 : 0
-    return { ...band, gain: Math.max(-10, Math.min(10, band.gain + deltaGain)) }
-  })
+  const bands = finalEQ ?? combineEQ(baseBands, personalizationDelta ?? [])
 
   return { results, optimalEQ: { device: device?.name ?? 'Unknown Device', bands } as OptimalEQ }
 }
@@ -66,19 +69,53 @@ function buildResults(
 function ResultPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+  const c = experienceCopy[lang]
   const r = t.result
   const [eqResults, setEqResults] = useState<EQResult[]>([])
   const [optimalEQ, setOptimalEQ] = useState<OptimalEQ | null>(null)
   const [isCapturing, setIsCapturing] = useState(false)
   const captureRef = useRef<HTMLDivElement>(null)
-  const { selectedDevice, isTestComplete, resetTest, testResult } = useTestStore()
+  const { selectedDevice, isTestComplete, resetTest, testResult, resultPersisted, retrySaveResult } = useTestStore()
 
-  const [displayedResult, setDisplayedResult] = useState<any>(null)
+  const [displayedResult, setDisplayedResult] = useState<TestResult | null>(null)
+  const [isShared, setIsShared] = useState(false)
+  const [isRestored, setIsRestored] = useState(false)
   const [shareFeedback, setShareFeedback] = useState<string | null>(null)
 
   useEffect(() => {
+    // Rehydrate result data from URL and browser storage after static export.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEqResults([])
+    setOptimalEQ(null)
+    setDisplayedResult(null)
+    setIsShared(false)
+    setIsRestored(true)
+    const sharedValue = new URLSearchParams(window.location.hash.slice(1)).get('eq')
+    if (sharedValue !== null) {
+      const shared = decodeSharedEQ(sharedValue)
+      if (shared) {
+        const { results } = buildResults(null, shared.delta, r.axis)
+        setEqResults(results)
+        setOptimalEQ({ device: shared.device, bands: shared.bands })
+        setIsShared(true)
+      }
+      return
+    }
     const id = searchParams.get('id')
+
+    // The current confirmed result remains usable when browser storage is full.
+    // An explicit ID still has to match exactly.
+    if (isTestComplete && selectedDevice && testResult && (!id || id === testResult.id)) {
+      try {
+        sessionStorage.setItem('eq_last_result', JSON.stringify({ device: selectedDevice, testResult }))
+      } catch {}
+      const { results, optimalEQ } = buildResults(selectedDevice, testResult.personalizationDelta, r.axis, testResult.finalEQ)
+      setEqResults(results)
+      setOptimalEQ(optimalEQ)
+      setDisplayedResult(testResult)
+      return
+    }
 
     // 1) 만약 URL에 id 파라미터가 있다면 localStorage에서 로드 시도
     if (id) {
@@ -96,7 +133,7 @@ function ResultPageContent() {
             baseEQ: defaultEqBands.map(b => ({ ...b })),
             version: '1.0.0'
           }
-          const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, found.personalizationDelta, r.axis)
+          const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, found.personalizationDelta, r.axis, found.finalEQ)
           setEqResults(viewResults)
           setOptimalEQ(viewOptimal)
           setDisplayedResult(found)
@@ -105,17 +142,7 @@ function ResultPageContent() {
       } catch (e) {
         console.error('Failed to restore result from localStorage:', e)
       }
-    }
-
-    // 2) Zustand 상태 정상: 저장 + 결과 렌더링
-    if (isTestComplete && selectedDevice && testResult) {
-      try {
-        sessionStorage.setItem('eq_last_result', JSON.stringify({ device: selectedDevice, testResult }))
-      } catch {}
-      const { results, optimalEQ } = buildResults(selectedDevice, testResult.personalizationDelta, r.axis)
-      setEqResults(results)
-      setOptimalEQ(optimalEQ)
-      setDisplayedResult(testResult)
+      // An explicit missing ID must never fall back to somebody else's latest result.
       return
     }
 
@@ -125,7 +152,7 @@ function ResultPageContent() {
       if (cached) {
         const { device, testResult: cachedResult } = JSON.parse(cached)
         if (device && cachedResult) {
-          const { results, optimalEQ } = buildResults(device, cachedResult.personalizationDelta, r.axis)
+          const { results, optimalEQ } = buildResults(device, cachedResult.personalizationDelta, r.axis, cachedResult.finalEQ)
           setEqResults(results)
           setOptimalEQ(optimalEQ)
           setDisplayedResult(cachedResult)
@@ -149,7 +176,7 @@ function ResultPageContent() {
           baseEQ: defaultEqBands.map(b => ({ ...b })),
           version: '1.0.0'
         }
-        const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, latest.personalizationDelta, r.axis)
+        const { results: viewResults, optimalEQ: viewOptimal } = buildResults(device, latest.personalizationDelta, r.axis, latest.finalEQ)
         setEqResults(viewResults)
         setOptimalEQ(viewOptimal)
         setDisplayedResult(latest)
@@ -165,9 +192,15 @@ function ResultPageContent() {
     return `${r.insightPrefix}${strong.map(res => res.description).join(', ')}${r.insightSuffix}`
   }
 
+  const axisUndetermined = (axis: string) => displayedResult?.schemaVersion === 2 &&
+    !displayedResult.responses.some(response => response.axis === axis && response.choice !== 'unsure')
+
   const handleDownloadEQ = () => {
     if (!optimalEQ) return
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({ device: optimalEQ.device, bands: optimalEQ.bands }, null, 2))
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({
+      schemaVersion: 1, device: optimalEQ.device, preampDb: getPreampDb(optimalEQ.bands),
+      referenceSampleRate: 48000, bands: optimalEQ.bands.map(band => ({ ...band, ...(band.type === 'peaking' ? { Q: EQ_Q } : { S: 1 }) })),
+    }, null, 2))
     const a = document.createElement('a')
     a.setAttribute('href', dataUri)
     a.setAttribute('download', `${optimalEQ.device}_eq_profile.json`)
@@ -183,7 +216,7 @@ function ResultPageContent() {
       const html2canvas = (await import('html2canvas')).default
       const isDark = document.documentElement.classList.contains('dark')
       const canvas = await html2canvas(captureRef.current, {
-        backgroundColor: isDark ? '#161716' : '#f7faf9',
+        backgroundColor: isDark ? '#111b22' : '#f5f8fa',
         scale: 2,
         useCORS: true,
         logging: false,
@@ -196,8 +229,11 @@ function ResultPageContent() {
       )
       const filename = `${optimalEQ?.device ?? 'eq'}_result.png`
 
-      const resultId = displayedResult?.id || searchParams.get('id') || ''
-      const shareUrl = resultId ? `${window.location.origin}/result?id=${resultId}` : window.location.origin
+      if (!optimalEQ) return
+      const delta = displayedResult?.personalizationDelta ?? defaultEqBands
+      const existingShare = decodeSharedEQ(new URLSearchParams(window.location.hash.slice(1)).get('eq') ?? '')
+      const payload = encodeSharedEQ({ v: 1, device: optimalEQ.device, bands: optimalEQ.bands, delta: existingShare?.delta ?? delta })
+      const shareUrl = `${window.location.origin}/result/#eq=${payload}`
       const shareTextContent = `${optimalEQ?.device ?? '기기'}${r.shareText.replace('https://eqfreeset.pages.dev', shareUrl)}`
 
       // Web Share API with files (mobile)
@@ -222,14 +258,14 @@ function ResultPageContent() {
         // Clipboard copy
         try {
           await navigator.clipboard.writeText(shareUrl)
+          setShareFeedback(c.copied)
         } catch {
-          await navigator.clipboard.writeText(shareTextContent)
+          setShareFeedback(c.imageSaved)
         }
-        setShareFeedback(r.shareCopied)
         setTimeout(() => setShareFeedback(null), 3000)
       }
-    } catch {
-      // share/download 실패 시 조용히 무시
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) setShareFeedback(c.shareError)
     } finally {
       setIsCapturing(false)
     }
@@ -240,6 +276,8 @@ function ResultPageContent() {
     router.push('/test')
   }
 
+  if (!isRestored) return <div className="page-shell items-center justify-center" role="status"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label={t.genre.downloading} /></div>
+
   /* ─── No result state (Zustand 미완료 + sessionStorage 복구도 없음) ─── */
   if (!displayedResult && !optimalEQ) return (
     <div className="page-shell">
@@ -247,6 +285,7 @@ function ResultPageContent() {
         <div className="app-header-inner">
           <button onClick={() => router.push('/')} className="text-muted-foreground hover:text-foreground transition-colors">
             <Home className="w-4 h-4" />
+            <span className="sr-only">{t.common.home}</span>
           </button>
           <h2 className="text-sm font-semibold text-foreground absolute left-1/2 -translate-x-1/2">{r.pageTitle}</h2>
           <div className="w-6" />
@@ -254,7 +293,7 @@ function ResultPageContent() {
       </header>
       <main className="container mx-auto px-4 max-w-lg py-20 flex-1 flex flex-col items-center justify-center text-center">
         <h1 className="text-xl font-bold mb-2">{r.noResult}</h1>
-        <p className="text-sm text-muted-foreground mb-6">{r.noResultDesc}</p>
+        <p className="text-sm text-muted-foreground mb-6">{searchParams.has('id') || (typeof window !== 'undefined' && window.location.hash) ? c.invalidShare : r.noResultDesc}</p>
         <Button onClick={() => { resetTest(); router.push('/test') }} className="btn-primary">
           {r.goToTest}
         </Button>
@@ -275,11 +314,11 @@ function ResultPageContent() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 max-w-lg py-6 fade-up flex-1 pb-20" ref={captureRef}>
+      <main className="result-content fade-up flex-1 pb-20" ref={captureRef}>
         {/* Completion Header */}
         <div className="mb-8">
-          <p className="label-xs mb-3">{r.complete}</p>
-          <h1 className="text-xl font-bold text-foreground mb-1">
+          <p className="badge-blue mb-4">{isShared ? c.shared : r.complete}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3">
             {optimalEQ?.device ?? ''}{r.optimizedFor}
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-3">
@@ -289,7 +328,7 @@ function ResultPageContent() {
           <div className="flex items-center gap-2 flex-wrap">
             {displayedResult?.completedRounds != null && (
               <Badge variant="secondary" className="text-xs">
-                {displayedResult.completedRounds}/{BAYESIAN_TOTAL_ROUNDS} {r.rounds}
+                {displayedResult.completedRounds}/{displayedResult.roundBudget ?? BAYESIAN_TOTAL_ROUNDS} {r.rounds}
               </Badge>
             )}
             {displayedResult?.earlyStop && (
@@ -298,6 +337,17 @@ function ResultPageContent() {
               </Badge>
             )}
           </div>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-4">{c.resultNote}</p>
+          {resultPersisted === false && displayedResult?.id === testResult?.id && <div className="surface p-4 mt-4" role="alert">
+            <p className="text-sm leading-relaxed">{c.saveFailed}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button variant="outline" onClick={handleDownloadEQ}>{r.download}</Button>
+              <Button onClick={retrySaveResult}>{c.retrySave}</Button>
+            </div>
+          </div>}
+          {displayedResult?.finalReview?.choice === 'base' && <p className="info-box text-xs mt-3">{c.baseChosen}</p>}
+          {displayedResult?.finalReview?.choice === 'unsure' && <p className="info-box text-xs mt-3">{c.reviewUnsure}</p>}
+          {displayedResult?.responses?.some(response => response.choice === 'unsure') && <p className="text-xs text-muted-foreground leading-relaxed mt-3" role="status">{c.uncertainResult}</p>}
         </div>
 
         {/* Divider */}
@@ -317,10 +367,10 @@ function ResultPageContent() {
                     variant={result.preference === 'similar' ? 'secondary' : 'default'}
                     className="text-xs"
                   >
-                    {result.preference === 'B' ? r.boosted : result.preference === 'A' ? r.reduced : r.balanced}
+                    {axisUndetermined(result.axis) ? c.notEnough : result.preference === 'B' ? r.boosted : result.preference === 'A' ? r.reduced : r.balanced}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{result.description}</p>
+                <p className="text-xs text-muted-foreground">{axisUndetermined(result.axis) ? c.untestedAxis : result.description}</p>
               </div>
             ))}
           </div>
@@ -335,12 +385,12 @@ function ResultPageContent() {
             <p className="label-xs mb-4">{r.eqTitle}</p>
 
             {/* Bar chart */}
-            <div className="surface p-4 mb-4" role="img" aria-label={r.eqTitle}>
-              <div className="w-full h-40 relative">
+            <div className="surface p-5 mb-4" role="img" aria-label={`${r.eqTitle}: ${optimalEQ.bands.map(b => `${b.frequency}Hz ${b.gain.toFixed(1)}dB`).join(', ')}`}>
+              <div className="w-full h-48 relative">
                 {/* 0dB line */}
                 <div className="absolute left-0 right-0 top-1/2 h-px bg-border z-10" />
-                <span className="absolute right-0 top-1/2 -translate-y-4 text-[9px] text-muted-foreground z-10 select-none">0dB</span>
-                <div className="flex h-full px-1 gap-1 pb-5">
+                <span className="absolute right-0 top-1/2 -translate-y-4 text-[10px] text-muted-foreground z-10 select-none">0dB</span>
+                <div className="flex h-full px-1 gap-2">
                   {optimalEQ.bands.map((band) => {
                     const g = Math.max(-10, Math.min(10, band.gain))
                     const pct = Math.abs(g) / 10 * 50
@@ -363,7 +413,7 @@ function ResultPageContent() {
                             />
                           )}
                         </div>
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[8px] text-muted-foreground leading-none">
+                        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground leading-none whitespace-nowrap">
                           {band.frequency >= 1000 ? `${band.frequency / 1000}k` : band.frequency}
                         </span>
                       </div>
@@ -374,7 +424,7 @@ function ResultPageContent() {
             </div>
 
             {/* Band values */}
-            <div className="grid grid-cols-5 gap-2 mb-6">
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-x-2 gap-y-4 mb-6 mt-8">
               {optimalEQ.bands.map((band) => {
                 const g = parseFloat(band.gain.toFixed(1))
                 return (
@@ -390,16 +440,18 @@ function ResultPageContent() {
               })}
             </div>
 
+            <div className="info-box mb-6 flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-foreground">{c.preamp}</p><p className="text-xs leading-relaxed mt-1">{c.preampNote}</p></div><span className="text-lg font-semibold text-primary whitespace-nowrap tabular-nums">{getPreampDb(optimalEQ.bands).toFixed(1)} dB</span></div>
+
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Button variant="outline" onClick={handleDownloadEQ} className="w-full text-sm border-border hover:border-primary/40">
+                <Button onClick={handleDownloadEQ} className="w-full h-12 text-sm">
                   <Download className="h-4 w-4 mr-2" />{r.download}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center leading-relaxed">{r.downloadTip}</p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Button variant="outline" onClick={handleShare} disabled={isCapturing} className="w-full text-sm border-border hover:border-primary/40">
+                <Button variant="outline" onClick={handleShare} disabled={isCapturing} className="w-full h-12 text-sm border-border hover:border-primary/40">
                   {isCapturing
                     ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     : <Share2 className="h-4 w-4 mr-2" />
@@ -410,12 +462,14 @@ function ResultPageContent() {
               </div>
             </div>
             {shareFeedback && (
-              <p className="text-xs text-primary text-center mt-3 animate-fade-in font-medium">
+              <p role="status" className="text-xs text-primary text-center mt-3 font-medium">
                 {shareFeedback}
               </p>
             )}
           </div>
         )}
+
+        <section className="preparation-panel !block mb-8"><h2 className="font-semibold text-lg">{c.apply}</h2><p className="text-sm text-muted-foreground leading-relaxed mt-2 mb-3">{c.applyDesc}</p><Link href="/guide/apply-eq" className="text-sm text-primary inline-block py-2 font-medium">{c.applyGuide}</Link></section>
 
         {/* Divider */}
         <div className="border-t border-border mb-6" />

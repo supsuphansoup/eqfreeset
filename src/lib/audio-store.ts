@@ -1,4 +1,7 @@
 import { create } from 'zustand'
+import { combineEQ, getPreampDb, getAxisGainRange } from './eq-processing'
+import { prepareComparison } from './comparison-audio'
+import { createPreferenceSearch, preferenceCandidates, summarizePreference, updatePreference, type PreferenceSearch } from './preference-search'
 
 export interface EQBand {
   frequency: number
@@ -18,8 +21,12 @@ export interface DeviceProfile {
 export interface TestResponse {
   round: number
   axis: 'bass' | 'warmth' | 'vocal' | 'brightness'
-  choice: 'A' | 'B' | 'similar'
+  choice: 'A' | 'B' | 'similar' | 'unsure'
   responseTime: number
+  aGain?: number
+  bGain?: number
+  segmentStart?: number
+  segmentDuration?: number
 }
 
 export interface TestResult {
@@ -28,10 +35,18 @@ export interface TestResult {
   deviceName?: string
   personalizationDelta: EQBand[]
   responses: TestResponse[]
-  confidence: number
+  confidence?: number       // 과거 기록 호환용. 새 결과에는 정확도 수치를 만들지 않음
   completedRounds: number   // 실제 완료된 라운드 수
   earlyStop: boolean        // 조기 종료 여부
   createdAt: string
+  schemaVersion?: 2
+  algorithmVersion?: string
+  baseEQSnapshot?: EQBand[]
+  finalEQ?: EQBand[]
+  deviceVersion?: string
+  roundBudget?: number
+  proposedEQ?: EQBand[]
+  finalReview?: { choice: 'base' | 'personalized' | 'unsure'; aIsPersonalized: boolean; segmentStart: number; segmentDuration: number }
 }
 
 export type TestAxis = 'bass' | 'warmth' | 'vocal' | 'brightness'
@@ -57,11 +72,12 @@ interface AudioState {
   currentEQ: EQBand[]
   playSegment: (startSec: number, durationSec: number) => Promise<void>
   playWithAxisGain: (axis: TestAxis, gainDb: number, start: number, duration: number) => Promise<void>
+  playComparison: (option: 'A' | 'B', start: number, duration: number) => Promise<void>
   applyAxisGain: (axis: TestAxis, gainDb: number) => void
   initAudioContext: () => Promise<void>
   loadAudio: (url: string) => Promise<boolean>
   loadAudioFile: (file: File) => Promise<boolean>
-  // 1회 FFT로 4축 동시 분석 → top-3 구간 반환 (OfflineAudioContext 생성 횟수 1/4로 절감)
+  // Stereo PCM energy analysis for all four axes.
   analyzeSegments: () => Promise<AnalyzedSegment[]>
   play: () => Promise<void>
   pause: () => void
@@ -71,20 +87,35 @@ interface AudioState {
 
 export interface AxisTestState {
   gain: number        // 현재 추정 선호 gain (dB)
-  bayesMean: number   // posterior 평균
-  bayesStd: number    // posterior 표준편차
+  bayesMean: number   // 기존 필드명 유지: 격자 분포의 중앙값을 반올림한 설정
+  bayesStd: number    // 가정한 응답 모형의 분포 폭; 청취 정확도가 아님
+  search: PreferenceSearch
 }
 
 const AXES: TestAxis[] = ['bass', 'warmth', 'vocal', 'brightness']
 export const BAYESIAN_TOTAL_ROUNDS = 16
+export const MAX_TEST_ROUNDS = 32
 
-function makeAxisState(): AxisTestState {
-  // bayesStd=5: 첫 비교는 ±5 dB 단차(니으로 전체 탐색공간 커버)
-  return { gain: 0, bayesMean: 0, bayesStd: 5 }
+function makeAxisState(min = -10, max = 10): AxisTestState {
+  return { gain: 0, bayesMean: 0, bayesStd: 5, search: createPreferenceSearch(min, max) }
+}
+
+function makeAxisStates(device: DeviceProfile | null = null) {
+  return Object.fromEntries(AXES.map(axis => {
+    const { min, max } = getAxisGainRange(device?.baseEQ ?? [], axis)
+    return [axis, makeAxisState(min, max)]
+  })) as Record<TestAxis, AxisTestState>
+}
+
+function answerAxis(state: AxisTestState, aGain: number, bGain: number, choice: TestResponse['choice']): AxisTestState {
+  const search = updatePreference(state.search, aGain, bGain, choice)
+  if (search === state.search) return state
+  const { gain, spread } = summarizePreference(search)
+  return { search, gain, bayesMean: gain, bayesStd: spread }
 }
 
 interface TestState {
-  currentStep: 'device' | 'audio' | 'segment' | 'test' | 'result'
+  currentStep: 'device' | 'audio' | 'segment' | 'test' | 'review' | 'result'
   selectedDevice: DeviceProfile | null
   selectedAudioType: 'sample' | 'upload'
   selectedSegment: { start: number; duration: number } | null  // manual 모드용
@@ -94,10 +125,15 @@ interface TestState {
   currentRound: number
   responses: TestResponse[]
   testResult: TestResult | null
+  resultPersisted: boolean | null
   isTestComplete: boolean
   currentAxis: TestAxis
   roundStartTime: number   // 현재 라운드 시작 시각 (Date.now())
   lastPlayedSegmentStart: number | null // 직전 라운드에 재생된 구간 시작 초 (연속 동일 구간 방지용)
+  comparisonFlipped: boolean
+  roundBudget: number
+  reviewFlipped: boolean
+  comparisonOverride: TestResponse | null
   getCurrentABGains: () => { aGain: number; bGain: number }
   // 현재 라운드에 사용할 세그먼트 (자동 순환 or 수동)
   getCurrentSegment: () => { start: number; duration: number } | null
@@ -107,13 +143,54 @@ interface TestState {
   setSelectedSegment: (segment: { start: number; duration: number }) => void
   setSegments: (segments: AnalyzedSegment[]) => void
   setManualMode: (manual: boolean) => void
-  processResponse: (choice: 'A' | 'B' | 'similar') => void
+  processResponse: (choice: TestResponse['choice']) => void
   completeTest: (earlyStop?: boolean) => void
+  confirmResult: (choice: 'A' | 'B' | 'unsure') => void
+  retrySaveResult: () => void
+  extendTest: () => void
+  undoLastResponse: () => void
   resetTestProgress: () => void
   resetTest: () => void
 }
 
 // ─── AudioStore ───────────────────────────────────────────────────────────────
+
+let audioLoadController: AbortController | null = null
+let comparisonRequest: object | null = null
+
+async function loadAudioData(read: (signal: AbortSignal) => Promise<ArrayBuffer>, errorMessage: string) {
+  comparisonRequest = null
+  const request = new AbortController()
+  audioLoadController?.abort()
+  audioLoadController = request
+  const isCurrent = () => audioLoadController === request
+  const get = useAudioStore.getState
+  useAudioStore.setState({ isLoading: true, error: null })
+  try {
+    await get().initAudioContext()
+    if (!isCurrent()) return false
+    const { audioContext } = get()
+    if (!audioContext) throw new Error('audio-context-unavailable')
+    if (audioContext.state === 'suspended') await audioContext.resume()
+    if (!isCurrent()) return false
+    get().pause()
+    const data = await read(request.signal)
+    if (!isCurrent()) return false
+    const buffer = await audioContext.decodeAudioData(data)
+    // Decoding cannot be aborted, so discard results from an obsolete request.
+    if (!isCurrent() || get().audioContext !== audioContext) return false
+    useAudioStore.setState({ currentBuffer: buffer })
+    return true
+  } catch {
+    if (isCurrent()) useAudioStore.setState({ error: errorMessage })
+    return false
+  } finally {
+    if (isCurrent()) {
+      audioLoadController = null
+      useAudioStore.setState({ isLoading: false })
+    }
+  }
+}
 
 export const useAudioStore = create<AudioState>((set, get) => ({
   audioContext: null,
@@ -161,46 +238,15 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   },
 
   loadAudio: async (url: string) => {
-    set({ isLoading: true, error: null })
-    try {
-      await get().initAudioContext()
-      const { audioContext, currentSource } = get()
-      if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return false }
-      if (audioContext.state === 'suspended') await audioContext.resume()
-      if (currentSource) { try { currentSource.stop() } catch {} }
-      const response = await fetch(url)
-      const arrayBuffer = await response.arrayBuffer()
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      set({ currentBuffer: audioBuffer })
-      return true
-    } catch (error) {
-      console.error('Audio load failed:', error)
-      set({ error: 'Failed to load audio. Please check the file or your connection.' })
-      return false
-    } finally {
-      set({ isLoading: false })
-    }
+    return loadAudioData(async signal => {
+      const response = await fetch(url, { signal })
+      if (!response.ok) throw new Error(`Audio request failed: ${response.status}`)
+      return response.arrayBuffer()
+    }, 'Failed to load audio. Please check the file or your connection.')
   },
 
   loadAudioFile: async (file: File) => {
-    set({ isLoading: true, error: null })
-    try {
-      await get().initAudioContext()
-      const { audioContext, currentSource } = get()
-      if (!audioContext) { set({ error: 'Failed to initialize audio. Please check your browser settings.' }); return false }
-      if (audioContext.state === 'suspended') await audioContext.resume()
-      if (currentSource) { try { currentSource.stop() } catch {} }
-      const arrayBuffer = await file.arrayBuffer()
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      set({ currentBuffer: audioBuffer })
-      return true
-    } catch (error) {
-      console.error('Audio file load failed:', error)
-      set({ error: 'Failed to load the uploaded audio file. Please try a different file.' })
-      return false
-    } finally {
-      set({ isLoading: false })
-    }
+    return loadAudioData(() => file.arrayBuffer(), 'Failed to load the uploaded audio file. Please try a different file.')
   },
 
   playSegment: async (startSec: number, durationSec: number) => {
@@ -234,7 +280,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   // O(n) 연산으로 구간당 ~440k 곱셈 → O(n³) DFT 대비 수백 배 빠름
   analyzeSegments: async (): Promise<AnalyzedSegment[]> => {
     const { currentBuffer } = get()
-    if (!currentBuffer) return []
+    if (!currentBuffer || currentBuffer.duration <= 0) return []
 
     const sampleRate      = currentBuffer.sampleRate
     const totalDuration   = currentBuffer.duration
@@ -242,16 +288,16 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
     const freqRanges: Record<TestAxis, [number, number]> = {
       // 겹치지 않는 경계: 각 축의 고유 특성 구간만 분리 (나이퀴스트 주파수 안전 마진 적용)
-      bass:       [20,   250],
-      warmth:     [250,  600],   // 저중음 온기감 (600Hz 이하)
-      vocal:      [600,  Math.min(3500, maxNyquistFreq)],  // 보컬 명료도 핵심 대역
-      brightness: [Math.min(3500, maxNyquistFreq - 500), Math.min(16000, maxNyquistFreq)], // 에어·존재감 대역
+      bass:       [20, 90],
+      warmth:     [90, 354],
+      vocal:      [354, Math.min(1414, maxNyquistFreq)],
+      brightness: [Math.min(1414, maxNyquistFreq - 500), Math.min(16000, maxNyquistFreq)],
     }
 
-    const segmentDuration = Math.max(2, Math.min(10, totalDuration))
+    const segmentDuration = Math.min(10, totalDuration)
     const stepSec         = Math.max(1, Math.min(5, Math.floor(totalDuration / 4)))
     const axisKeys: TestAxis[] = ['bass', 'warmth', 'vocal', 'brightness']
-    const channelData     = currentBuffer.getChannelData(0)
+    const channels = Array.from({ length: currentBuffer.numberOfChannels }, (_, c) => currentBuffer.getChannelData(c))
 
     // 앞뒤 15% 제외 (전주/아웃트로)
     const startLimit = totalDuration > 30 ? totalDuration * 0.15 : 0
@@ -305,16 +351,18 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
     let offset = startLimit
     while (offset + segmentDuration <= endLimit) {
+      if (get().currentBuffer !== currentBuffer) return []
       const startSample    = Math.floor(offset * sampleRate)
-      const endSample      = Math.min(startSample + Math.floor(segmentDuration * sampleRate), channelData.length)
+      const endSample      = Math.min(startSample + Math.floor(segmentDuration * sampleRate), channels[0].length)
       // subarray 사용으로 무복사 메모리 뷰 생성 (메모리 절약 및 GC 부하 방지)
-      const segmentSamples = channelData.subarray(startSample, endSample)
-      const rmsTotal       = totalRMS(segmentSamples) || 1
+      const segmentChannels = channels.map(channel => channel.subarray(startSample, endSample))
+      // Sum channel energy rather than samples: anti-phase stereo must not cancel.
+      const rmsTotal = Math.sqrt(segmentChannels.reduce((sum, samples) => sum + totalRMS(samples) ** 2, 0) / channels.length) || 1
 
       const axisScores = {} as Record<TestAxis, number>
       for (const ax of axisKeys) {
         const [lo, hi] = freqRanges[ax]
-        const rms       = bandRMS(segmentSamples, lo, hi)
+        const rms = Math.sqrt(segmentChannels.reduce((sum, samples) => sum + bandRMS(samples, lo, hi) ** 2, 0) / channels.length)
         const prominence = rms / rmsTotal  // 전체 대비 해당 대역 비율
         axisScores[ax]  = rms * Math.pow(prominence, 1.5)
       }
@@ -328,21 +376,11 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
       scored.push({ start: offset, duration: segmentDuration, label, axisScores, energy: avgScore })
       offset += stepSec
+      // Let loading feedback and input paint while analysing long files.
+      if (scored.length % 4 === 0) await new Promise(resolve => setTimeout(resolve, 0))
     }
 
-    // 2초 미만 음원 등 루프에서 세그먼트가 생성되지 않은 경우 전체 음원을 1구간으로 보장
-    if (scored.length === 0) {
-      const fallbackDuration = Math.max(0.1, totalDuration)
-      const eMin = Math.floor(fallbackDuration / 60)
-      const eSec = Math.floor(fallbackDuration % 60)
-      return [{
-        start: 0,
-        duration: fallbackDuration,
-        label: `0:00 ~ ${eMin}:${String(eSec).padStart(2, '0')}`,
-        energy: 1,
-        axisScores: { bass: 1, warmth: 1, vocal: 1, brightness: 1 }
-      }]
-    }
+    if (scored.length === 0 || get().currentBuffer !== currentBuffer) return []
 
     // 에너지 정규화 (0~1)
     const maxE  = Math.max(...scored.map(r => r.energy))
@@ -435,21 +473,18 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     const idxMap: Record<TestAxis, number[]> = {
       bass: [0, 1], warmth: [2, 3], vocal: [4, 5], brightness: [6, 7, 8, 9],
     }
-    const allFinalGains: number[] = []
+    const finalBands = combineEQ(baseEQ ?? filters.map(filter => ({ frequency: filter.frequency.value, gain: 0, type: filter.type as EQBand['type'] })),
+      filters.map((filter, i) => ({ frequency: filter.frequency.value, gain: activeGains[AXES.find(a => idxMap[a].includes(i))!], type: filter.type as EQBand['type'] })))
     AXES.forEach(a => {
       idxMap[a].forEach(i => {
         if (filters[i]) {
-          const baseGain = baseEQ ? baseEQ[i].gain : 0
-          const finalGain = Math.max(-10, Math.min(10, baseGain + activeGains[a]))
+          const finalGain = finalBands[i].gain
           filters[i].gain.value = finalGain
-          allFinalGains.push(finalGain)
         }
       })
     })
-    // Loudness Normalization: 전체 밴드 평균 gain으로 보상
-    // → A/B 각각 재생 시 평균 스펙트럼 파워를 동일하게 유지해 loudness 편향 제거
-    const avgGainDb = allFinalGains.reduce((s, g) => s + g, 0) / (allFinalGains.length || 1)
-    gainNode.gain.value = Math.pow(10, -avgGainDb / 20)
+    // Frequency-response headroom; perceptual loudness matching is separate.
+    gainNode.gain.value = Math.pow(10, getPreampDb(finalBands, get().audioContext?.sampleRate) / 20)
   },
 
   playWithAxisGain: async (axis: TestAxis, gainDb: number, start: number, duration: number) => {
@@ -457,22 +492,74 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     await get().playSegment(start, duration)
   },
 
+  playComparison: async (option, start, duration) => {
+    if (get().isLoading) return
+    const request = {}
+    comparisonRequest = request
+    set({ isLoading: true, error: null })
+    try {
+      await get().initAudioContext()
+      const { audioContext, currentBuffer } = get()
+      if (!audioContext || !currentBuffer) throw new Error('comparison-unavailable')
+      if (audioContext.state === 'suspended') await audioContext.resume()
+      if (audioContext.state !== 'running') throw new Error('comparison-unavailable')
+      get().pause()
+      const test = useTestStore.getState()
+      const { aGain, bGain } = test.getCurrentABGains()
+      const bandsFor = (gain: number) => {
+        const axisForBand = ['bass', 'bass', 'warmth', 'warmth', 'vocal', 'vocal', 'brightness', 'brightness', 'brightness', 'brightness'] as const
+        return combineEQ(test.selectedDevice!.baseEQ, test.selectedDevice!.baseEQ.map((band, i) => ({
+          ...band, gain: axisForBand[i] === test.currentAxis ? gain : test.axisStates[axisForBand[i]].gain,
+        })))
+      }
+      const draft = test.testResult
+      const review = test.currentStep === 'review'
+      if (!test.selectedDevice || (review && (!draft?.baseEQSnapshot || !draft.finalEQ))) throw new Error('comparison-unavailable')
+      const aBands = review ? (test.reviewFlipped ? draft!.finalEQ! : draft!.baseEQSnapshot!) : bandsFor(aGain)
+      const bBands = review ? (test.reviewFlipped ? draft!.baseEQSnapshot! : draft!.finalEQ!) : bandsFor(bGain)
+      const pair = await prepareComparison(currentBuffer, aBands, bBands, start, duration, audioContext.sampleRate)
+      const latest = useTestStore.getState()
+      if (comparisonRequest !== request) return
+      if (!['test', 'review'].includes(latest.currentStep) || latest.currentStep !== test.currentStep || latest.testResult !== draft || latest.comparisonOverride !== test.comparisonOverride || latest.currentRound !== test.currentRound || latest.selectedDevice !== test.selectedDevice || latest.currentAxis !== test.currentAxis || latest.comparisonFlipped !== test.comparisonFlipped || latest.reviewFlipped !== test.reviewFlipped || get().currentBuffer !== currentBuffer || get().audioContext !== audioContext) return
+      const latestSegment = latest.getCurrentSegment()
+      if (latestSegment?.start !== start || latestSegment.duration !== duration) return
+      const source = audioContext.createBufferSource()
+      source.buffer = pair[option]
+      // EQ and matched levels are already in the PCM; bypass the live filter chain.
+      source.connect(audioContext.destination)
+      source.onended = () => {
+        source.disconnect()
+        if (get().currentSource === source) set({ currentSource: null, isPlaying: false })
+      }
+      source.start()
+      set({ currentSource: source, isPlaying: true })
+    } catch (error) {
+      if (comparisonRequest === request) set({ error: error instanceof Error && error.message === 'comparison-silent' ? 'comparison-silent' : 'comparison-unavailable', isPlaying: false })
+    } finally {
+      if (comparisonRequest === request) {
+        comparisonRequest = null
+        set({ isLoading: false })
+      }
+    }
+  },
+
   applyEQ: (eqBands: EQBand[]) => {
     const { filters, gainNode } = get()
     if (!gainNode || filters.length === 0) return
-    let maxPositiveGain = 0
     eqBands.forEach((band, index) => {
       if (filters[index]) {
         const finalGain = Math.max(-10, Math.min(10, band.gain))
         filters[index].gain.value = finalGain
-        if (finalGain > maxPositiveGain) maxPositiveGain = finalGain
       }
     })
-    gainNode.gain.value = Math.pow(10, -maxPositiveGain / 20)
+    gainNode.gain.value = Math.pow(10, getPreampDb(eqBands, get().audioContext?.sampleRate) / 20)
     set({ currentEQ: eqBands })
   },
 
   cleanup: () => {
+    comparisonRequest = null
+    audioLoadController?.abort()
+    audioLoadController = null
     const { currentSource, audioContext } = get()
     if (currentSource) {
       currentSource.onended = null
@@ -489,22 +576,18 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 }))
 
 // Local storage helper
-function saveResultToLocalStorage(result: TestResult) {
-  if (typeof window === 'undefined') return
+function saveResultToLocalStorage(result: TestResult): boolean {
+  if (typeof window === 'undefined') return false
   try {
     const stored = localStorage.getItem('eqfreeset.results')
     const parsed = stored ? JSON.parse(stored) : []
     const results: TestResult[] = Array.isArray(parsed) ? parsed : []
     // Remove if duplicate ID exists
     const filtered = results.filter(r => r && typeof r === 'object' && r.id !== result.id)
-    // Limit to 50 items
-    if (filtered.length >= 50) {
-      filtered.pop()
-    }
-    filtered.unshift(result)
-    localStorage.setItem('eqfreeset.results', JSON.stringify(filtered))
-  } catch (e) {
-    console.error('Failed to save result to localStorage:', e)
+    localStorage.setItem('eqfreeset.results', JSON.stringify([result, ...filtered].slice(0, 50)))
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -517,31 +600,39 @@ export const useTestStore = create<TestState>((set, get) => ({
   selectedSegment: null,
   segments: [],
   manualMode: false,
-  axisStates: {
-    bass: makeAxisState(), warmth: makeAxisState(),
-    vocal: makeAxisState(), brightness: makeAxisState(),
-  },
+  axisStates: makeAxisStates(),
   currentRound: 1,
   responses: [],
   testResult: null,
+  resultPersisted: null,
   isTestComplete: false,
   currentAxis: 'bass',
   roundStartTime: Date.now(),
   lastPlayedSegmentStart: null,
+  comparisonFlipped: Math.random() < 0.5,
+  roundBudget: BAYESIAN_TOTAL_ROUNDS,
+  reviewFlipped: false,
+  comparisonOverride: null,
 
-  // A = mean - std, B = mean + std
+  // Randomize the visible labels once per round; keep replay assignments stable.
   getCurrentABGains: () => {
-    const { axisStates, currentAxis } = get()
-    const s = axisStates[currentAxis]
-    const clamp = (v: number) => Math.max(-10, Math.min(10, v))
-    return { aGain: clamp(s.bayesMean - s.bayesStd), bGain: clamp(s.bayesMean + s.bayesStd) }
+    const { axisStates, currentAxis, comparisonFlipped, comparisonOverride } = get()
+    if (comparisonOverride?.aGain != null && comparisonOverride.bGain != null) return { aGain: comparisonOverride.aGain, bGain: comparisonOverride.bGain }
+    const { low, high } = preferenceCandidates(axisStates[currentAxis].search)
+    return comparisonFlipped ? { aGain: high, bGain: low } : { aGain: low, bGain: high }
   },
 
   // 현재 라운드에 사용할 세그먼트
   // - manualMode ON : 사용자가 지정한 selectedSegment
   // - manualMode OFF: 현재 축의 특화도 상위 후보군 안에서 축 등장 횟수 기반 순환 + 직전 라운드 회피
   getCurrentSegment: () => {
-    const { manualMode, selectedSegment, segments, currentAxis, responses, lastPlayedSegmentStart } = get()
+    const { manualMode, selectedSegment, segments, currentAxis, responses, lastPlayedSegmentStart, comparisonOverride, currentStep } = get()
+    if (comparisonOverride?.segmentStart != null && comparisonOverride.segmentDuration != null) return { start: comparisonOverride.segmentStart, duration: comparisonOverride.segmentDuration }
+    // Use one stable segment throughout the final whole-EQ comparison.
+    if (currentStep === 'review' && responses[responses.length - 1]?.segmentStart != null) {
+      const last = responses[responses.length - 1]
+      return { start: last.segmentStart!, duration: last.segmentDuration! }
+    }
     if (manualMode) return selectedSegment
     if (segments.length === 0) return null
 
@@ -569,35 +660,29 @@ export const useTestStore = create<TestState>((set, get) => ({
   },
 
   setCurrentStep:     (step)    => set({ currentStep: step }),
-  setSelectedDevice:  (device)  => set({ selectedDevice: device }),
+  setSelectedDevice:  (device)  => set({ selectedDevice: device, axisStates: makeAxisStates(device) }),
   setSelectedAudioType:(type)   => set({ selectedAudioType: type }),
-  setSelectedSegment: (segment) => set({ selectedSegment: segment }),
+  setSelectedSegment: (segment) => set({ selectedSegment: segment, comparisonOverride: null }),
   setSegments:        (segments)=> set({ segments }),
   setManualMode:      (manual)  => set({ manualMode: manual }),
 
-  // Bayesian 갱신 (Thurstone 근사) + 조기 종료
+  // Explicit response likelihood on a bounded grid. Unsure supplies no evidence.
   processResponse: (choice) => {
     const state = get()
-    if (state.isTestComplete) return
+    if (state.isTestComplete || state.currentStep !== 'test' || !state.selectedDevice) return
 
     const { currentRound, axisStates, currentAxis } = state
-    const s = { ...axisStates[currentAxis] }
-
-    // Mean 갱신: A/B는 std 비례 이동
-    if (choice === 'B')      s.bayesMean = Math.min(10, s.bayesMean + s.bayesStd * 0.4)
-    else if (choice === 'A') s.bayesMean = Math.max(-10, s.bayesMean - s.bayesStd * 0.4)
-    // similar: mean 부동 (이미 true에 가기다는 신호 → 현 위치유지)
-
-    // Std 갱신: Monte Carlo 200회 시뮬레이션으로 검증된 최적값
-    // · similar → "이미 true 근처" 신호 → std 큰 폭 감소로 빠른 수렴 (×0.70)
-    // · A/B    → 방향은 알았지만 similar보다 덜 확신 → std 소폭 감소 (×0.85)
-    s.bayesStd = Math.max(0.5, s.bayesStd * (choice === 'similar' ? 0.70 : 0.85))
-    s.gain = s.bayesMean
+    const { aGain, bGain } = state.getCurrentABGains()
+    if (Math.abs(aGain - bGain) < 1e-9) choice = 'unsure'
+    const s = answerAxis(axisStates[currentAxis], aGain, bGain, choice)
 
     const newAxisStates = { ...axisStates, [currentAxis]: s }
-    const nextAxis = AXES.reduce((a, b) =>
-      newAxisStates[a].bayesStd >= newAxisStates[b].bayesStd ? a : b
-    )
+    // Keep a skipped axis from consuming the remaining rounds. First balance
+    // attempts, then use width to break ties; every axis gets four opportunities.
+    const attempts = (axis: TestAxis) => state.responses.filter(r => r.axis === axis).length + (axis === currentAxis ? 1 : 0)
+    const nextAxis = AXES.reduce((a, b) => attempts(a) !== attempts(b)
+      ? (attempts(a) < attempts(b) ? a : b)
+      : (newAxisStates[a].bayesStd >= newAxisStates[b].bayesStd ? a : b))
 
     const currentSeg = state.getCurrentSegment()
 
@@ -607,27 +692,27 @@ export const useTestStore = create<TestState>((set, get) => ({
       currentAxis: nextAxis,
       roundStartTime: Date.now(),
       lastPlayedSegmentStart: currentSeg ? currentSeg.start : null,
+      comparisonFlipped: Math.random() < 0.5,
+      comparisonOverride: null,
       responses: [...state.responses, {
         round: currentRound, axis: currentAxis, choice,
+        aGain, bGain,
+        segmentStart: currentSeg?.start, segmentDuration: currentSeg?.duration,
         responseTime: Date.now() - state.roundStartTime,
       }],
     })
 
-    // 조기 종료: 10라운드 이후, 모든 축 std ≤ 2.0 && 평균 std ≤ 1.5
-    const stds       = AXES.map(a => newAxisStates[a].bayesStd)
-    const avgStdNow  = stds.reduce((a, b) => a + b, 0) / stds.length
-    const allTight   = stds.every(std => std <= 2.0)
-    const nextRound  = currentRound + 1  // set() 후 실제 저장될 라운드 번호
-    const earlyStop  = nextRound > 10 && allTight && avgStdNow <= 1.5
-
-    if (nextRound > BAYESIAN_TOTAL_ROUNDS || earlyStop) get().completeTest(earlyStop)
+    if (currentRound >= state.roundBudget) get().completeTest()
   },
 
   completeTest: (earlyStop = false) => {
     const state = get()
-    if (!state.selectedDevice) return
+    if (!state.selectedDevice || state.currentStep !== 'test') return
     const { axisStates } = state
-    const gainOf = (axis: TestAxis) => Math.max(-10, Math.min(10, axisStates[axis].gain))
+    const gainOf = (axis: TestAxis) => {
+      const range = getAxisGainRange(state.selectedDevice!.baseEQ, axis)
+      return Math.max(range.min, Math.min(range.max, axisStates[axis].gain))
+    }
 
     const personalizationDelta: EQBand[] = [
       { frequency: 32,    gain: gainOf('bass'),       type: 'lowshelf'  },
@@ -642,10 +727,6 @@ export const useTestStore = create<TestState>((set, get) => ({
       { frequency: 16000, gain: gainOf('brightness'), type: 'highshelf' },
     ]
 
-    const avgStd = AXES.reduce((s, a) => s + state.axisStates[a].bayesStd, 0) / 4
-    // confidence: 1 - (avgStd / bayesStd_초기값). 초기 std=5 기준으로 정규화
-    const confidence = Math.min(0.99, Math.max(0.5, 1 - avgStd / 5))
-
     const resultId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -656,34 +737,82 @@ export const useTestStore = create<TestState>((set, get) => ({
       deviceName: state.selectedDevice.name,
       personalizationDelta,
       responses: state.responses,
-      confidence,
       completedRounds: state.responses.length,
       earlyStop,
       createdAt: new Date().toISOString(),
+      schemaVersion: 2,
+      algorithmVersion: 'preference-grid-v3',
+      roundBudget: state.roundBudget,
+      deviceVersion: state.selectedDevice.version,
+      baseEQSnapshot: state.selectedDevice.baseEQ.map(b => ({ ...b })),
+      finalEQ: combineEQ(state.selectedDevice.baseEQ, personalizationDelta),
     }
-
-    saveResultToLocalStorage(finalResult)
 
     set({
       testResult: finalResult,
-      currentStep: 'result',
-      isTestComplete: true,
+      currentStep: 'review',
+      reviewFlipped: Math.random() < 0.5,
+      isTestComplete: false,
     })
+  },
+
+  confirmResult: (choice) => {
+    const state = get(), draft = state.testResult, segment = state.getCurrentSegment()
+    if (state.currentStep !== 'review' || !draft?.baseEQSnapshot || !draft.finalEQ || !segment) return
+    const selection = choice === 'unsure' ? 'unsure' : ((choice === 'A') === state.reviewFlipped ? 'personalized' : 'base')
+    const result: TestResult = {
+      ...draft,
+      proposedEQ: draft.finalEQ.map(b => ({ ...b })),
+      finalReview: { choice: selection, aIsPersonalized: state.reviewFlipped, segmentStart: segment.start, segmentDuration: segment.duration },
+      ...(selection === 'base' ? {
+        personalizationDelta: draft.personalizationDelta.map(b => ({ ...b, gain: 0 })),
+        finalEQ: draft.baseEQSnapshot.map(b => ({ ...b })),
+      } : {}),
+    }
+    const resultPersisted = saveResultToLocalStorage(result)
+    set({ testResult: result, resultPersisted, currentStep: 'result', isTestComplete: true })
+  },
+
+  retrySaveResult: () => {
+    const state = get()
+    if (state.isTestComplete && state.testResult) set({ resultPersisted: saveResultToLocalStorage(state.testResult) })
+  },
+
+  extendTest: () => {
+    const state = get()
+    if (state.currentStep !== 'review' || state.roundBudget >= MAX_TEST_ROUNDS) return
+    set({ roundBudget: Math.min(MAX_TEST_ROUNDS, state.roundBudget + 8), testResult: null, currentStep: 'test', roundStartTime: Date.now() })
+  },
+
+  undoLastResponse: () => {
+    const state = get()
+    if (!['test', 'review'].includes(state.currentStep) || !state.selectedDevice || !state.responses.length) return
+    const responses = state.responses.slice(0, -1), last = state.responses[state.responses.length - 1]
+    const axisStates = makeAxisStates(state.selectedDevice)
+    for (const response of responses) {
+      axisStates[response.axis] = answerAxis(axisStates[response.axis], response.aGain!, response.bGain!, response.choice)
+    }
+    set({ responses, axisStates, currentRound: last.round, currentAxis: last.axis,
+      comparisonOverride: last, comparisonFlipped: last.aGain! > last.bGain!,
+      currentStep: 'test', testResult: null, isTestComplete: false, roundStartTime: Date.now(),
+      lastPlayedSegmentStart: responses[responses.length - 1]?.segmentStart ?? null })
   },
 
   // 테스트 진행 데이터만 수동 초기화 (세그먼트·기기 선택은 유지)
   resetTestProgress: () => set({
-    axisStates: {
-      bass: makeAxisState(), warmth: makeAxisState(),
-      vocal: makeAxisState(), brightness: makeAxisState(),
-    },
+    axisStates: makeAxisStates(get().selectedDevice),
+    roundBudget: BAYESIAN_TOTAL_ROUNDS,
+    reviewFlipped: false,
+    comparisonOverride: null,
     currentRound: 1,
     responses: [],
     testResult: null,
+    resultPersisted: null,
     isTestComplete: false,
     currentAxis: 'bass',
     roundStartTime: Date.now(),
     lastPlayedSegmentStart: null,
+    comparisonFlipped: Math.random() < 0.5,
   }),
 
   resetTest: () => set({
@@ -693,16 +822,18 @@ export const useTestStore = create<TestState>((set, get) => ({
     selectedSegment: null,
     segments: [],
     manualMode: false,
-    axisStates: {
-      bass: makeAxisState(), warmth: makeAxisState(),
-      vocal: makeAxisState(), brightness: makeAxisState(),
-    },
+    axisStates: makeAxisStates(),
+    roundBudget: BAYESIAN_TOTAL_ROUNDS,
+    reviewFlipped: false,
+    comparisonOverride: null,
     currentRound: 1,
     responses: [],
     testResult: null,
+    resultPersisted: null,
     isTestComplete: false,
     currentAxis: 'bass',
     roundStartTime: Date.now(),
     lastPlayedSegmentStart: null,
+    comparisonFlipped: Math.random() < 0.5,
   }),
 }))

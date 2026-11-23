@@ -15,7 +15,7 @@ const ko = {
   },
   // 홈
   home: {
-    heroBadge: '전문가 수준의 개인화',
+    heroBadge: '내 귀로 고르는 맞춤 EQ',
     heroTitle1: '내 ',
     heroTitle2: '기기',
     heroTitle3: '에 맞는',
@@ -39,7 +39,7 @@ const ko = {
     faq2Q: 'A/B 테스트는 어떤 방식으로 진행되나요?',
     faq2A: '저음, 중음(따뜻함), 보컬(선명도), 고음(밝기) 등 각 사운드 특성에 대해 미세하게 다른 두 가지 EQ 설정(A와 B)을 들려드립니다. 번갈아 들어보며 더 마음에 드는 소리를 직관적으로 선택하시면 됩니다.',
     faq3Q: '테스트 결과는 어떻게 적용하나요?',
-    faq3A: '테스트가 완료되면 10밴드 그래픽 EQ 또는 파라메트릭 EQ(PEQ) 값을 제공합니다. 이를 스마트폰의 기본 설정, 스트리밍 앱(Spotify, Apple Music 등), 또는 음향기기 전용앱에 입력하여 바로 사용할 수 있습니다.',
+    faq3A: '테스트가 끝나면 10개 주파수의 EQ 값을 제공합니다. 사용하는 EQ 앱의 주파수와 필터 방식이 일치하는지 확인한 뒤 입력하세요. JSON은 설정 보관용이며, 모든 앱에서 바로 가져올 수 있는 형식은 아닙니다.',
     ctaReadInfo: '📚 정보글 읽기',
     ctaContact: '💬 개발자와 소통',
     guidesTitle: '가이드 읽어보기',
@@ -67,7 +67,7 @@ const ko = {
     sampleDesc: '서비스에서 제공하는 장르별 샘플로 테스트합니다',
     uploadTitle: '음원 업로드',
     uploadDesc: '내 음원을 업로드하면 최적 구간을 자동으로 찾아드립니다',
-    tip: '음원 업로드 기능을 사용하여 자주 듣는 장르를 넣어 테스트하면 정확도가 더 좋습니다!',
+    tip: '자주 듣는 익숙한 음악을 사용하면 두 소리의 차이를 비교하기 쉽습니다.',
   },
   // 테스트 — 장르 선택
   genre: {
@@ -112,7 +112,7 @@ const ko = {
   // 테스트 — A/B 테스트
   test: {
     headerTitle: '분석',
-    bayesianLabel: '정밀 분석 · Bayesian',
+    bayesianLabel: '취향에 맞춰 조정 중',
     nowTesting: '현재 테스트 중',
     listenBoth: 'A와 B를 모두 들어본 후 더 자연스러운 쪽을 선택해주세요',
     needBoth: 'A와 B를 모두 들어야 선택할 수 있습니다',
@@ -121,7 +121,7 @@ const ko = {
     tapToPlay: '탭하여 재생',
     chooseA: 'A가 더 좋음',
     chooseB: 'B가 더 좋음',
-    similar: '비슷함 (잘 모르겠음)',
+    similar: '둘 다 비슷하게 좋음',
     helpTitle: '이 항목에서 무엇을 비교하나요?',
     helpSub: '탭하여 비교 가이드 보기',
     guideTitle: '비교 가이드',
@@ -145,14 +145,14 @@ const ko = {
     noResultDesc: '먼저 A/B 테스트를 완료해주세요',
     goToTest: '테스트 시작하기',
     complete: '테스트 완료!',
-    optimizedFor: '에 최적화된 EQ 설정을 찾았습니다',
-    analysisTitle: '선호도 분석 결과',
-    eqTitle: '최적 EQ 설정',
+    optimizedFor: '의 취향을 반영한 EQ 설정',
+    analysisTitle: '기본 보정 대비 취향 변화',
+    eqTitle: '추천 EQ 설정',
     boosted: '강조됨',
     reduced: '감소됨',
     balanced: '균형',
     download: '설정 다운로드',
-    downloadTip: '💡 JSON 형식을 지원하는 경우 이 버튼을 이용하세요!',
+    downloadTip: '설정을 JSON으로 보관합니다. 앱별 가져오기 지원을 확인하세요.',
     share: '공유하기',
     shareTip: '📸 결과 이미지를 PNG로 저장하거나 공유합니다.',
     confidence: '신뢰도',
@@ -163,7 +163,7 @@ const ko = {
     shareText: '에 최적화된 EQ를 찾았어요! \nEQ FreeSet에서 나만의 EQ를 무료로 찾아보세요 👉 https://eqfreeset.pages.dev',
     shareTitle: '나의 EQ 설정 결과',
     shareCopied: '공유 링크가 클립보드에 복사되었습니다.',
-    insightFlat: '플랫(Flat)한 원음 그대로의 사운드를 선호하시네요. 밸런스 있는 소리를 좋아하시는 성향을 반영했습니다.',
+    insightFlat: '기기 기본 보정에서 크게 바꾸지 않는 쪽을 선택했습니다. 아래 값에는 기기 기본 보정도 포함되어 있습니다.',
     insightPrefix: '분석 결과, 주로 [',
     insightSuffix: '] 성향을 선호하십니다. 이 데이터를 바탕으로 사용자님만의 맞춤형 사운드를 완성했습니다.',
     axis: {

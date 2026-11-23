@@ -4,15 +4,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/lib/language-context'
+import { Home, Headphones, BookOpen } from 'lucide-react'
 
 export function BottomNav() {
   const pathname = usePathname()
   const { t } = useLanguage()
 
   const navItems = [
-    { href: '/', label: t.nav.home },
-    { href: '/test', label: t.nav.test },
-    { href: '/info', label: t.nav.info },
+    { href: '/', label: t.nav.home, icon: Home },
+    { href: '/test', label: t.nav.test, icon: Headphones },
+    { href: '/info', label: t.nav.info, icon: BookOpen },
   ]
 
   const NO_NAV = ['/test', '/result']
@@ -20,7 +21,7 @@ export function BottomNav() {
   if (NO_NAV.includes(clean)) return null
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 border-t border-border backdrop-blur-sm">
+    <nav className="mobile-nav" aria-label={t.common.appName}>
       <div className="flex justify-around items-center h-14 px-4 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = item.href === '/'
@@ -34,12 +35,13 @@ export function BottomNav() {
               href={item.href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                "flex items-center justify-center flex-1 py-2 text-xs font-medium transition-colors duration-150",
+                "flex flex-col gap-1 items-center justify-center flex-1 py-2 text-xs font-medium transition-colors duration-150",
                 isActive
-                  ? "text-foreground"
+                  ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
+              <item.icon className="h-4 w-4" aria-hidden="true" />
               {item.label}
             </Link>
           )

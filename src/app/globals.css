@@ -1,5 +1,4 @@
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,18 +6,18 @@
 @layer base {
   :root {
     /* Light mode — warm off-white with teal accent */
-    --background: 150 10% 97%;
-    --foreground: 150 10% 8%;
+    --background: 204 28% 97%;
+    --foreground: 207 38% 16%;
     --card: 0 0% 100%;
     --card-foreground: 150 10% 8%;
     --popover: 0 0% 100%;
     --popover-foreground: 150 10% 8%;
-    --primary: 177 60% 44%;
+    --primary: 171 78% 27%;
     --primary-foreground: 0 0% 100%;
     --secondary: 150 5% 93%;
     --secondary-foreground: 150 5% 25%;
     --muted: 150 5% 93%;
-    --muted-foreground: 168 5% 45%;
+    --muted-foreground: 207 13% 41%;
     --accent: 177 60% 44%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
@@ -31,25 +30,25 @@
 
   .dark {
     /* Dark mode — index.html original: #161716 bg, #1d201f surface, #2cb5af primary */
-    --background: 150 2% 9%;
-    --foreground: 150 14% 96%;
-    --card: 150 4% 12%;
+    --background: 207 34% 10%;
+    --foreground: 200 22% 94%;
+    --card: 207 29% 13%;
     --card-foreground: 150 14% 96%;
-    --popover: 150 4% 12%;
+    --popover: 207 29% 13%;
     --popover-foreground: 150 14% 96%;
-    --primary: 177 60% 44%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 150 5% 15%;
+    --primary: 166 55% 68%;
+    --primary-foreground: 207 38% 12%;
+    --secondary: 207 24% 18%;
     --secondary-foreground: 168 5% 65%;
-    --muted: 150 5% 15%;
-    --muted-foreground: 168 5% 61%;
+    --muted: 207 24% 18%;
+    --muted-foreground: 204 15% 68%;
     --accent: 177 60% 44%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 150 5% 20%;
-    --input: 150 5% 20%;
-    --ring: 177 60% 44%;
+    --border: 207 22% 23%;
+    --input: 207 22% 29%;
+    --ring: 166 55% 68%;
   }
 
   * {
@@ -59,6 +58,9 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    font-family: var(--font-sans), 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   }
 
   html {
@@ -68,6 +70,12 @@
   /* Smooth scroll */
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 4px;
   }
 }
 
@@ -83,7 +91,7 @@
 
   /* ─── Typography ─── */
   .label-xs {
-    @apply text-xs font-medium tracking-widest uppercase text-muted-foreground;
+    @apply text-xs font-medium tracking-wide text-muted-foreground;
   }
 
   /* ─── Page Shell ─── */
@@ -97,7 +105,8 @@
   }
 
   .app-header-inner {
-    @apply container mx-auto px-4 h-14 flex items-center justify-between;
+    @apply mx-auto px-5 h-16 flex items-center justify-between w-full relative;
+    max-width: 1160px;
   }
 
   /* ─── Primary Button ─── */
@@ -142,7 +151,7 @@
 
   /* ─── Progress Bar ─── */
   .progress-track {
-    @apply w-full h-0.5 bg-border rounded-full overflow-hidden;
+    @apply w-full h-1.5 bg-border rounded-full overflow-hidden;
   }
 
   .progress-fill {
@@ -202,4 +211,56 @@
     background: hsl(var(--border));
     border-radius: 999px;
   }
+}
+
+@layer components {
+  .brand { @apply inline-flex items-center gap-2.5 font-semibold text-base tracking-tight; }
+  .home-container { @apply w-full mx-auto px-5; max-width: 1120px; }
+  .home-hero { @apply grid items-center gap-12 py-14; }
+  .hero-title { font-size: clamp(2.2rem, 4.2vw, 3.65rem); line-height: 1.2; letter-spacing: -.055em; font-weight: 700; white-space: pre-line; }
+  .hero-description { @apply text-muted-foreground mt-6 leading-relaxed; max-width: 30rem; }
+  .eq-preview { @apply bg-card border border-border rounded-3xl p-5 min-w-0; box-shadow: 0 18px 70px -40px hsl(var(--primary) / .22); }
+  .preview-icon { @apply flex items-center justify-center h-10 w-10 bg-primary/10 text-primary rounded-xl; }
+  .preview-axis { fill: hsl(var(--muted-foreground)); font-size: 10px; }
+  .preview-presets { @apply flex flex-wrap gap-1 rounded-xl bg-background p-1; }
+  .preview-presets button { @apply flex-1 px-2 py-3 text-xs rounded-lg text-muted-foreground; min-height: 44px; }
+  .preview-presets button[aria-pressed="true"] { @apply bg-primary/10 text-primary font-semibold; }
+  .home-section { @apply py-12 border-t border-border; }
+  .section-intro { @apply mb-8; }
+  .section-title, .section-intro h2 { @apply text-2xl font-semibold tracking-tight; }
+  .section-intro p { @apply text-sm text-muted-foreground leading-relaxed mt-3; max-width: 34rem; }
+  .home-steps { @apply grid gap-6; }
+  .home-steps li { @apply py-2; }
+  .step-number { @apply text-sm text-muted-foreground tabular-nums; }
+  .preparation-panel { @apply grid gap-7 bg-primary/5 border border-primary/15 rounded-2xl p-6 my-5; }
+  .home-guides { @apply grid gap-x-8; }
+  .guide-link { @apply py-5 border-b border-border; }
+  .guide-link:hover h3 { @apply text-primary; }
+  .home-faq { @apply grid gap-6; }
+  .test-content { @apply w-full mx-auto px-5 py-8; max-width: 680px; }
+  .test-steps { @apply flex gap-2 w-full mx-auto px-5 pt-6 pb-1; max-width: 680px; }
+  .test-steps li { @apply flex flex-1 items-center gap-2 text-xs text-muted-foreground; }
+  .test-steps li[aria-current="step"] { @apply text-primary font-semibold; }
+  .test-step-marker { @apply w-6 h-6 flex items-center justify-center rounded-full bg-muted flex-shrink-0 text-xs; }
+  [aria-current="step"] .test-step-marker { @apply bg-primary text-primary-foreground; }
+  .result-content { @apply w-full mx-auto px-5 py-8; max-width: 780px; }
+  .mobile-nav { @apply fixed bottom-0 left-0 right-0 z-40 bg-background/95 border-t border-border backdrop-blur-md; padding-bottom: env(safe-area-inset-bottom); }
+  .mobile-nav a { min-height: 52px; }
+  .mobile-nav-spacer { height: calc(72px + env(safe-area-inset-bottom)); }
+}
+
+@media (min-width: 768px) {
+  .home-hero { grid-template-columns: 1.05fr 1fr; gap: 3rem; padding-block: 6rem; }
+  .eq-preview { padding: 1.75rem; }
+  .home-section { padding-block: 4rem; }
+  .home-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3rem; }
+  .home-steps li + li { border-left: 1px solid hsl(var(--border)); padding-left: 2rem; }
+  .preparation-panel { grid-template-columns: 1fr 1fr; align-items: center; padding: 2.25rem; gap: 3rem; }
+  .home-guides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-faq { grid-template-columns: .7fr 1fr; gap: 4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

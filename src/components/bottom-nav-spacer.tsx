@@ -8,5 +8,5 @@ export function BottomNavSpacer() {
   const pathname = usePathname()
   const clean = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
   if (NO_NAV_PATHS.includes(clean)) return null
-  return <div className="h-16" aria-hidden="true" />
+  return <div className="mobile-nav-spacer" aria-hidden="true" />
 }

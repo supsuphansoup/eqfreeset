@@ -37,6 +37,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('eq-lang')
     }
     const saved = localStorage.getItem('v2_eq-lang') as LangCode | null
+    // Restore browser storage after hydration; static HTML always starts in Korean.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved && LOCALES[saved]) setLangState(saved)
     setMounted(true)
   }, [])

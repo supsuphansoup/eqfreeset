@@ -14,10 +14,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swa
 
 export const metadata: Metadata = {
   title: {
-    default: 'EQ FreeSet — 3분 만에 찾는 내 이어폰·헤드폰 맞춤 EQ',
+    default: 'EQ FreeSet — 듣고 고르는 내 이어폰·헤드폰 맞춤 EQ',
     template: '%s | EQ FreeSet',
   },
-  description: '이어폰과 헤드폰에 맞는 이퀄라이저 설정을 무료로 찾아보세요. 3분 A/B 블라인드 테스트로 내 귀에 맞는 EQ 값을 받고 JSON으로 바로 내려받을 수 있습니다.',
+  description: '이어폰과 헤드폰에 맞는 이퀄라이저 설정을 무료로 찾아보세요. A/B 블라인드 테스트로 내 귀에 맞는 EQ 값을 받고 JSON으로 바로 내려받을 수 있습니다.',
   keywords: [
     'EQ settings', 'equalizer', 'earphone EQ', 'headphone EQ', 'A/B test', 'audio optimization',
     'sound tuning', 'AutoEQ', 'EQ FreeSet', 'free EQ', 'personalized EQ', 'hearing test',
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'EQ FreeSet — 3분 만에 찾는 내 맞춤 EQ',
+    title: 'EQ FreeSet — 듣고 고르는 내 맞춤 EQ',
     description: 'A/B 블라인드 테스트로 이어폰·헤드폰에 맞는 이퀄라이저 설정을 무료로 찾아보세요. 결과는 JSON으로 바로 내려받을 수 있습니다.',
     url: 'https://eqfreeset.pages.dev',
     siteName: 'EQ FreeSet',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'EQ FreeSet — 3분 만에 내 맞춤 이퀄라이저 설정 찾기',
+        alt: 'EQ FreeSet — 내 취향에 맞는 이퀄라이저 설정 찾기',
         type: 'image/png',
       }
     ],
@@ -60,8 +60,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EQ FreeSet — 3분 만에 찾는 내 맞춤 EQ',
-    description: '이어폰·헤드폰 맞춤 이퀄라이저 설정을 3분 A/B 블라인드 테스트로 무료로 찾아보세요.',
+    title: 'EQ FreeSet — 듣고 고르는 내 맞춤 EQ',
+    description: '이어폰·헤드폰 맞춤 이퀄라이저 설정을 A/B 블라인드 테스트로 무료로 찾아보세요.',
     images: ['/og-image.png'],
   },
   manifest: '/manifest.json',
