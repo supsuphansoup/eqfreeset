@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { withLanguages } from '@/lib/locale-routes'
 import { FEATURED_DEVICES, buildDeviceContent, getDeviceDisplayName } from '@/lib/device-guides'
 import DeviceEqContent from './DeviceEqContent'
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${name} EQ 설정값 추천 · 10밴드 보정표`,
     description: `${name}의 측정 기반 소리 성향(저음·보컬·고음)과 10밴드 EQ 보정값, 프리앰프, 앱에서 EQ를 적용하는 방법을 정리했습니다.`,
-    alternates: { canonical: `/eq/${device}/` },
+    alternates: withLanguages(`/eq/${device}/`),
   }
 }
 

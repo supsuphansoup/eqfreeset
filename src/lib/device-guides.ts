@@ -26,6 +26,19 @@ export const FEATURED_DEVICES: FeaturedDevice[] = [
   { id: 'samsung-galaxy-buds-fe', koName: '갤럭시 버즈 FE', form: 'sealed' },
   { id: 'sony-wf-1000xm5', koName: '소니 WF-1000XM5', form: 'sealed' },
   { id: 'sony-wh-1000xm5', koName: '소니 WH-1000XM5', form: 'headphones' },
+  { id: 'apple-airpods-pro-1st-gen', koName: '에어팟 프로 1', form: 'sealed' },
+  { id: 'apple-airpods-3rd-gen', koName: '에어팟 3', form: 'open' },
+  { id: 'apple-airpods-2nd-gen', koName: '에어팟 2', form: 'open' },
+  { id: 'samsung-galaxy-buds2-pro', koName: '갤럭시 버즈2 프로', form: 'sealed' },
+  { id: 'samsung-galaxy-buds2', koName: '갤럭시 버즈2', form: 'sealed' },
+  { id: 'sony-wh-1000xm6', koName: '소니 WH-1000XM6', form: 'headphones' },
+  { id: 'sony-wf-1000xm4', koName: '소니 WF-1000XM4', form: 'sealed' },
+  { id: 'sony-wh-1000xm4', koName: '소니 WH-1000XM4', form: 'headphones' },
+  { id: 'qcy-t13', koName: 'QCY T13', form: 'sealed' },
+  { id: 'bose-quietcomfort-ultra-earbuds', koName: '보스 QC 울트라 이어버드', form: 'sealed' },
+  { id: 'bose-quietcomfort-ultra-headphones', koName: '보스 QC 울트라 헤드폰', form: 'headphones' },
+  { id: 'sennheiser-mtw-4', koName: '젠하이저 모멘텀 트루 와이어리스 4', form: 'sealed' },
+  { id: 'sennheiser-momentum-4', koName: '젠하이저 모멘텀 4', form: 'headphones' },
 ]
 
 const AXES: TestAxis[] = ['bass', 'warmth', 'vocal', 'brightness']
@@ -342,6 +355,72 @@ const BRAND_APPLY: Record<string, Record<LangCode, string[]>> = {
       'より精密に：AndroidならWavelet、WindowsならEqualizer APOに10バンド値をそのまま入れられます。その際、アプリのEQはオフかフラットにしてください。',
     ],
   },
+  Bose: {
+    ko: [
+      'Bose 앱: 이어폰 설정의 이퀄라이저에서 저음·중음·고음 3개 슬라이더를 조절할 수 있습니다. 이어폰에 저장되어 모든 앱에 적용됩니다.',
+      '10밴드를 3밴드로: 위 표에서 32~125Hz 평균은 저음, 250Hz~1kHz 평균은 중음, 2k~16kHz 평균은 고음 슬라이더에 대략 옮기세요. 3밴드라 세밀한 보정은 어렵습니다.',
+      '더 정밀하게: 안드로이드는 Wavelet, Windows는 Equalizer APO에 10밴드 값을 그대로 넣을 수 있습니다. 이때 Bose 앱 EQ는 평탄하게 두세요.',
+    ],
+    en: [
+      'Bose app: The equalizer in the earbud settings has three sliders for bass, mid and treble. It is stored on the device and applies to every app.',
+      'From 10 bands to 3: Roughly move the average of 32–125Hz to bass, 250Hz–1kHz to mid and 2k–16kHz to treble. Three bands cannot reproduce fine corrections.',
+      'More precision: Enter the 10-band values as-is in Wavelet on Android or Equalizer APO on Windows, and keep the Bose app EQ flat.',
+    ],
+    zh: [
+      'Bose应用：耳机设置中的均衡器提供低音、中音、高音三个滑块。设置保存在耳机上，对所有应用生效。',
+      '10段转3段：将上表32–125Hz的平均值大致对应到低音，250Hz–1kHz对应中音，2k–16kHz对应高音。3段无法实现精细校正。',
+      '更精细：Android可用Wavelet、Windows可用Equalizer APO原样输入10段数值，此时请将Bose应用EQ保持平直。',
+    ],
+    ja: [
+      'Boseアプリ：イヤホン設定のイコライザーで低音・中音・高音の3つのスライダーを調整できます。本体に保存され、すべてのアプリに適用されます。',
+      '10バンドを3バンドに：上の表の32〜125Hzの平均を低音、250Hz〜1kHzを中音、2k〜16kHzを高音のスライダーにおおよそ移してください。3バンドなので細かい補正はできません。',
+      'より精密に：AndroidならWavelet、WindowsならEqualizer APOに10バンド値をそのまま入れられます。その際、BoseアプリのEQはフラットにしてください。',
+    ],
+  },
+  Sennheiser: {
+    ko: [
+      'Sennheiser Smart Control 앱: 사운드 설정의 이퀄라이저에서 대역별로 조절할 수 있습니다. 밴드 수는 모델과 앱 버전에 따라 다릅니다.',
+      '10밴드를 앱 밴드로: 앱의 각 밴드에 가장 가까운 주파수의 값을 넣으세요. 값이 완전히 같을 필요는 없습니다.',
+      '더 정밀하게: 안드로이드는 Wavelet, Windows는 Equalizer APO에 10밴드 값을 그대로 넣을 수 있습니다. 이때 앱 EQ는 평탄하게 두세요.',
+    ],
+    en: [
+      'Sennheiser Smart Control app: Adjust each range in the equalizer under the sound settings. The number of bands depends on the model and app version.',
+      'Mapping 10 bands: Put the nearest-frequency value on each app band. Values do not need to match exactly.',
+      'More precision: Enter the 10-band values as-is in Wavelet on Android or Equalizer APO on Windows, and keep the app EQ flat.',
+    ],
+    zh: [
+      'Sennheiser Smart Control应用：在声音设置的均衡器中按频段调节。频段数量因型号和应用版本而异。',
+      '10段对应：在应用每个频段填入最接近频率的数值即可，数值不必完全一致。',
+      '更精细：Android可用Wavelet、Windows可用Equalizer APO原样输入10段数值，此时请将应用EQ保持平直。',
+    ],
+    ja: [
+      'Sennheiser Smart Controlアプリ：サウンド設定のイコライザーで帯域ごとに調整できます。バンド数はモデルやアプリのバージョンによって異なります。',
+      '10バンドの対応：アプリの各バンドに最も近い周波数の値を入れてください。値が完全に一致する必要はありません。',
+      'より精密に：AndroidならWavelet、WindowsならEqualizer APOに10バンド値をそのまま入れられます。その際、アプリのEQはフラットにしてください。',
+    ],
+  },
+  QCY: {
+    ko: [
+      'QCY 앱: 이퀄라이저 메뉴에서 프리셋을 고르거나 사용자 설정 EQ를 조절할 수 있습니다. 지원 여부와 밴드 수는 모델에 따라 다릅니다.',
+      '10밴드를 앱 밴드로: 앱의 각 밴드에 가장 가까운 주파수의 값을 넣으세요.',
+      '더 정밀하게: 안드로이드는 Wavelet, Windows는 Equalizer APO에 10밴드 값을 그대로 넣을 수 있습니다. 이때 QCY 앱 EQ는 기본값으로 두세요.',
+    ],
+    en: [
+      'QCY app: In the equalizer menu, choose a preset or adjust a custom EQ. Support and band count depend on the model.',
+      'Mapping 10 bands: Put the nearest-frequency value on each app band.',
+      'More precision: Enter the 10-band values as-is in Wavelet on Android or Equalizer APO on Windows, and keep the QCY app EQ at default.',
+    ],
+    zh: [
+      'QCY应用：在均衡器菜单中选择预设或调节自定义EQ。是否支持及频段数量因型号而异。',
+      '10段对应：在应用每个频段填入最接近频率的数值。',
+      '更精细：Android可用Wavelet、Windows可用Equalizer APO原样输入10段数值，此时请将QCY应用EQ保持默认。',
+    ],
+    ja: [
+      'QCYアプリ：イコライザーメニューでプリセットを選ぶか、カスタムEQを調整できます。対応状況とバンド数はモデルによって異なります。',
+      '10バンドの対応：アプリの各バンドに最も近い周波数の値を入れてください。',
+      'より精密に：AndroidならWavelet、WindowsならEqualizer APOに10バンド値をそのまま入れられます。その際、QCYアプリのEQはデフォルトにしてください。',
+    ],
+  },
 }
 
 const formatGain = (gain: number) => `${gain > 0 ? '+' : ''}${gain.toFixed(1)} dB`
@@ -411,6 +490,22 @@ export const DEVICE_PAGE_COPY: Record<LangCode, { moreDevices: string; allDevice
   en: { moreDevices: COPY.en.moreDevices, allDevices: COPY.en.allDevices },
   zh: { moreDevices: COPY.zh.moreDevices, allDevices: COPY.zh.allDevices },
   ja: { moreDevices: COPY.ja.moreDevices, allDevices: COPY.ja.allDevices },
+}
+
+/** 결과 페이지의 기기 이름(DB name)으로 기기별 EQ 페이지를 찾는다. 없으면 null */
+export function findFeaturedIdByDeviceName(name: string): string | null {
+  return FEATURED_DEVICES.find((d) => findDeviceById(d.id)?.name === name)?.id ?? null
+}
+
+const DEVICE_LINK_TEXT: Record<LangCode, (name: string) => string> = {
+  ko: (name) => `${name} EQ 설정 자세히 보기`,
+  en: (name) => `${name} EQ settings in detail`,
+  zh: (name) => `查看${name}的EQ设置详情`,
+  ja: (name) => `${name}のEQ設定を詳しく見る`,
+}
+
+export function getDeviceLinkText(id: string, lang: LangCode) {
+  return DEVICE_LINK_TEXT[lang](getDeviceDisplayName(id, lang))
 }
 
 /** 기기 목록 카드용 한 줄 요약 (차이가 큰 대역 최대 2개) */

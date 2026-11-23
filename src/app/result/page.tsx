@@ -11,6 +11,7 @@ import { decodeSharedEQ, encodeSharedEQ, validBands } from '@/lib/result-share'
 import { experienceCopy } from '@/lib/experience-copy'
 import { useLanguage } from '@/lib/language-context'
 import { findDeviceById } from '@/lib/device-db'
+import { findFeaturedIdByDeviceName, getDeviceLinkText } from '@/lib/device-guides'
 import { Download, Share2, RotateCcw, Home, Loader2 } from 'lucide-react'
 
 interface EQResult {
@@ -74,6 +75,8 @@ function ResultPageContent() {
   const r = t.result
   const [eqResults, setEqResults] = useState<EQResult[]>([])
   const [optimalEQ, setOptimalEQ] = useState<OptimalEQ | null>(null)
+  // 인기 기기라면 기기별 EQ 페이지로 이어서 볼 수 있게 한다
+  const featuredDeviceId = optimalEQ ? findFeaturedIdByDeviceName(optimalEQ.device) : null
   const [isCapturing, setIsCapturing] = useState(false)
   const captureRef = useRef<HTMLDivElement>(null)
   const { selectedDevice, isTestComplete, resetTest, testResult, resultPersisted, retrySaveResult } = useTestStore()
@@ -469,7 +472,7 @@ function ResultPageContent() {
           </div>
         )}
 
-        <section className="preparation-panel !block mb-8"><h2 className="font-semibold text-lg">{c.apply}</h2><p className="text-sm text-muted-foreground leading-relaxed mt-2 mb-3">{c.applyDesc}</p><Link href="/guide/apply-eq" className="text-sm text-primary inline-block py-2 font-medium">{c.applyGuide}</Link></section>
+        <section className="preparation-panel !block mb-8"><h2 className="font-semibold text-lg">{c.apply}</h2><p className="text-sm text-muted-foreground leading-relaxed mt-2 mb-3">{c.applyDesc}</p><div className="flex flex-wrap gap-x-5"><Link href="/guide/apply-eq" className="text-sm text-primary inline-block py-2 font-medium">{c.applyGuide}</Link>{featuredDeviceId && <Link href={`/eq/${featuredDeviceId}`} className="text-sm text-primary inline-block py-2 font-medium">{getDeviceLinkText(featuredDeviceId, lang)}</Link>}</div></section>
 
         {/* Divider */}
         <div className="border-t border-border mb-6" />

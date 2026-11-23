@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { GuideArticleView } from '@/components/guide-article'
 import { useLanguage } from '@/lib/language-context'
 import type { GuideContent } from '@/lib/guides'

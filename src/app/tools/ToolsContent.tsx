@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useLanguage, type LangCode } from '@/lib/language-context'
@@ -376,10 +376,13 @@ export default function ToolsContent() {
       const ctx = await getContext()
       if (!ctx) { stream.getTracks().forEach((track) => track.stop()); setMic('unsupported'); return }
       streamRef.current = stream
-      // 분석만 하고 스피커로는 내보내지 않음 (하울링 방지)
+      // 분석만 하고 소리는 내보내지 않음 (하울링 방지). 출력에 연결되지 않은 노드는
+      // 일부 브라우저가 처리하지 않으므로 음량 0인 노드를 거쳐 출력에 연결해 둔다
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 1024
-      ctx.createMediaStreamSource(stream).connect(analyser)
+      const mute = ctx.createGain()
+      mute.gain.value = 0
+      ctx.createMediaStreamSource(stream).connect(analyser).connect(mute).connect(ctx.destination)
       const buffer = new Float32Array(analyser.fftSize)
       const tick = () => {
         analyser.getFloatTimeDomainData(buffer)

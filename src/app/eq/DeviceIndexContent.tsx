@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { Button } from '@/components/ui/button'
 import { useLanguage, type LangCode } from '@/lib/language-context'
 import { FEATURED_DEVICES, getDeviceDisplayName, getDeviceHighlights } from '@/lib/device-guides'

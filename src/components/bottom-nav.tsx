@@ -1,13 +1,15 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/lib/language-context'
+import { splitLangPath } from '@/lib/locale-routes'
 import { Home, Headphones, BookOpen } from 'lucide-react'
 
 export function BottomNav() {
-  const pathname = usePathname()
+  // /en/ 같은 언어 접두사를 떼고 활성 메뉴를 판단한다
+  const pathname = splitLangPath(usePathname()).path
   const { t } = useLanguage()
 
   const navItems = [

@@ -1,13 +1,14 @@
 import { MetadataRoute } from 'next'
 import { GUIDES } from '@/lib/guides'
 import { FEATURED_DEVICES } from '@/lib/device-guides'
+import { ROUTE_LANGS, isLocalizedPath, languageAlternates, localizePath } from '@/lib/locale-routes'
 
 export const dynamic = 'force-static'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://eqfreeset.pages.dev'
 
-  return [
+  const entries: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/`,
       lastModified: new Date(),
@@ -81,4 +82,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.2,
     },
   ]
+
+  // 언어별 페이지(/en/ 등)를 추가하고, 각 항목에 hreflang 대응을 붙인다
+  return entries.flatMap((entry) => {
+    const path = entry.url.slice(baseUrl.length)
+    if (!isLocalizedPath(path)) return [entry]
+    const alternates = {
+      languages: Object.fromEntries(Object.entries(languageAlternates(path)).map(([lang, p]) => [lang, `${baseUrl}${p}`])),
+    }
+    return [
+      { ...entry, alternates },
+      ...ROUTE_LANGS.map((lang) => ({ ...entry, url: `${baseUrl}${localizePath(path, lang)}`, alternates })),
+    ]
+  })
 }

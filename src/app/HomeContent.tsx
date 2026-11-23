@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { AudioLines, ArrowUpRight, Check, Clock3, Headphones, LockKeyhole, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -12,6 +12,40 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { AdBanner } from '@/components/ad-banner'
 import { ADSENSE_CONFIG } from '@/lib/ad-config'
 import { GUIDES } from '@/lib/guides'
+import { WebAppJsonLd } from '@/components/json-ld'
+import type { LangCode } from '@/lib/language-context'
+
+// 기기별 EQ 페이지와 테스트 도구로 가는 홈 카드
+const MORE: Record<LangCode, { title: string; items: { href: string; title: string; desc: string }[] }> = {
+  ko: {
+    title: '더 알아보기',
+    items: [
+      { href: '/eq', title: '기기별 EQ 설정값', desc: '에어팟, 갤럭시 버즈, 소니, 보스 등 인기 기기의 소리 성향과 10밴드 보정값' },
+      { href: '/tools', title: '이어폰 좌우·마이크 테스트', desc: '좌우 채널, 20Hz–20kHz 주파수 스윕, 마이크(핸즈프리) 입력과 녹음 확인' },
+    ],
+  },
+  en: {
+    title: 'More',
+    items: [
+      { href: '/eq', title: 'EQ Settings by Device', desc: 'Sound signatures and 10-band corrections for AirPods, Galaxy Buds, Sony, Bose and more' },
+      { href: '/tools', title: 'Left/Right & Mic Test', desc: 'Check left and right channels, a 20Hz–20kHz sweep and your headset mic with recording' },
+    ],
+  },
+  zh: {
+    title: '更多内容',
+    items: [
+      { href: '/eq', title: '按设备的EQ设置', desc: 'AirPods、Galaxy Buds、索尼、Bose等热门设备的声音倾向与10段校正值' },
+      { href: '/tools', title: '耳机左右与麦克风测试', desc: '检查左右声道、20Hz–20kHz频率扫描以及麦克风输入与录音' },
+    ],
+  },
+  ja: {
+    title: 'もっと見る',
+    items: [
+      { href: '/eq', title: '機器別EQ設定', desc: 'AirPods、Galaxy Buds、ソニー、Boseなど人気機器の音の傾向と10バンド補正値' },
+      { href: '/tools', title: 'イヤホン左右・マイクテスト', desc: '左右チャンネル、20Hz–20kHzの周波数スイープ、マイク入力と録音を確認' },
+    ],
+  },
+}
 
 export default function HomeContent() {
   const { t, lang } = useLanguage()
@@ -25,6 +59,7 @@ export default function HomeContent() {
 
   return (
     <main className="page-shell">
+      <WebAppJsonLd />
       <header className="app-header">
         <div className="app-header-inner">
           <Link href="/" className="brand"><AudioLines aria-hidden="true" className="h-6 w-6 text-primary" /><span>EQ FreeSet</span></Link>
@@ -72,6 +107,11 @@ export default function HomeContent() {
         <section className="home-section">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-7"><h2 className="section-title">{c.guides}</h2><Link href="/guide" className="text-sm text-primary whitespace-nowrap py-2">{h.allGuides}</Link></div>
           <div className="home-guides">{GUIDES.slice(0, 4).map(guide => <Link key={guide.slug} href={`/guide/${guide.slug}`} className="guide-link"><div className="flex items-start justify-between gap-3"><h3 className="font-semibold text-sm">{guide.title[lang]}</h3><ArrowUpRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" /></div><p className="mt-2 text-sm text-muted-foreground leading-relaxed">{guide.desc[lang]}</p></Link>)}</div>
+        </section>
+
+        <section className="home-section">
+          <h2 className="section-title mb-7">{MORE[lang].title}</h2>
+          <div className="home-guides">{MORE[lang].items.map(item => <Link key={item.href} href={item.href} className="guide-link"><div className="flex items-start justify-between gap-3"><h3 className="font-semibold text-sm">{item.title}</h3><ArrowUpRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" /></div><p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.desc}</p></Link>)}</div>
         </section>
 
         <section className="home-section home-faq">

@@ -123,7 +123,9 @@ export default function RootLayout({
                 });
 
                 // ─── 언어 즉시 적용 ───
-                var storedLang = localStorage.getItem('v2_eq-lang');
+                // /en/, /zh/, /ja/ 주소는 URL 언어가 우선
+                var pathLang = (location.pathname.match(new RegExp('^/(en|zh|ja)(/|$)')) || [])[1];
+                var storedLang = pathLang || localStorage.getItem('v2_eq-lang');
                 if (storedLang && ['ko', 'en', 'zh', 'ja'].indexOf(storedLang) !== -1) {
                   document.documentElement.lang = storedLang;
                 } else {

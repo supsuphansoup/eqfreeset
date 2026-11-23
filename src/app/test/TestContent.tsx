@@ -10,7 +10,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { useTestStore, useAudioStore, MAX_TEST_ROUNDS } from '@/lib/audio-store'
 import { getAllDevices, findDeviceByName, findDeviceById } from '@/lib/device-db'
 import { useLanguage } from '@/lib/language-context'
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { experienceCopy } from '@/lib/experience-copy'
 import { Play, Pause, Search, ArrowLeft, Loader2, CheckCircle } from 'lucide-react'
 
@@ -24,7 +24,7 @@ const GENRE_URL: Record<string, string> = {
 
 export default function TestContent() {
   const router = useRouter()
-  const { t, lang } = useLanguage()
+  const { t, lang, localePath } = useLanguage()
   const c = experienceCopy[lang]
   const [searchTerm, setSearchTerm] = useState('')
   const filteredDevices = useMemo(() => {
@@ -254,7 +254,7 @@ export default function TestContent() {
   /* ─── STEP: device ─── */
   if (currentStep === 'device') return (
     <div className="page-shell">
-      {renderHeader(t.device.pageTitle, () => router.push('/'))}
+      {renderHeader(t.device.pageTitle, () => router.push(localePath('/')))}
       <main className="test-content fade-up flex-1">
         <div className="mb-6">
           <h1 className="text-xl font-bold mb-1.5">{t.device.title}</h1>

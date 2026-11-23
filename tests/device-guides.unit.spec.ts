@@ -34,7 +34,7 @@ test('every featured device exists in the DB and builds a page in all languages'
 
 test('unknown device ids do not build pages', () => {
   expect(buildDeviceContent('not-a-device')).toBeNull()
-  expect(buildDeviceContent('qcy-t13')).toBeNull() // DB에는 있지만 페이지 대상이 아님
+  expect(buildDeviceContent('jbl-wave-beam')).toBeNull() // DB에는 있지만 페이지 대상이 아님
 })
 
 test('traits invert the correction relative to the overall level: a bass cut means extra bass', () => {

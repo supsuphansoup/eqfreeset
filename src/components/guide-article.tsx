@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import type { ReactNode } from 'react'
+import { ArticleJsonLd } from '@/components/json-ld'
 import { Button } from '@/components/ui/button'
 import { useLanguage, type LangCode } from '@/lib/language-context'
 import { GUIDES, type GuideBlock, type GuideContent } from '@/lib/guides'
@@ -103,6 +104,7 @@ export function GuideArticleView({ slug, content, children }: { slug: string; co
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-3xl">
+      <ArticleJsonLd title={c.title} description={c.subtitle} />
       <article>
         <header className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{c.title}</h1>

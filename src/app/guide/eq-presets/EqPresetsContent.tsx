@@ -1,6 +1,7 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
+import { ArticleJsonLd } from '@/components/json-ld'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useLanguage, type LangCode } from '@/lib/language-context'
@@ -293,6 +294,7 @@ export default function EqPresetsContent() {
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-3xl">
+      <ArticleJsonLd title={c.title} />
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{c.title}</h1>
         <p className="text-muted-foreground">{c.subtitle}</p>

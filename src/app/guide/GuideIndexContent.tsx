@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/locale-link'
 import { useLanguage, type LangCode } from '@/lib/language-context'
 import { GUIDES } from '@/lib/guides'
 
