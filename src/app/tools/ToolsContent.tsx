@@ -423,7 +423,7 @@ export default function ToolsContent() {
   const micActive = mic === 'listening' || mic === 'recording'
   const micError = mic === 'denied' || mic === 'nodevice' || mic === 'unsupported' || mic === 'error' ? c.mic.errors[mic] : null
   const sideButton = (side: 'left' | 'center' | 'right', label: string) => (
-    <Button variant={playing === side ? 'default' : 'outline'} onClick={() => void playChannel(side)} aria-pressed={playing === side}>
+    <Button variant={playing === side ? 'default' : 'outline'} className={playing === side ? 'playing-ring' : undefined} onClick={() => void playChannel(side)} aria-pressed={playing === side}>
       {label}
     </Button>
   )
@@ -477,8 +477,8 @@ export default function ToolsContent() {
               <span>{formatHz(SWEEP_MAX_HZ)}</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <Button variant={playing === 'sweep' ? 'default' : 'outline'} onClick={() => void playSweep()}>{c.freq.sweep}</Button>
-              <Button variant={playing === 'tone' ? 'default' : 'outline'} onClick={() => void playTone()}>{c.freq.tone}</Button>
+              <Button variant={playing === 'sweep' ? 'default' : 'outline'} className={playing === 'sweep' ? 'playing-ring' : undefined} onClick={() => void playSweep()}>{c.freq.sweep}</Button>
+              <Button variant={playing === 'tone' ? 'default' : 'outline'} className={playing === 'tone' ? 'playing-ring' : undefined} onClick={() => void playTone()}>{c.freq.tone}</Button>
               <Button variant="ghost" onClick={stopSound} disabled={playing !== 'sweep' && playing !== 'tone'}>{c.freq.stop}</Button>
             </div>
           </div>
@@ -499,11 +499,11 @@ export default function ToolsContent() {
               {micActive
                 ? <Button variant="outline" onClick={turnOffMic} disabled={mic === 'recording'}>{c.mic.stop}</Button>
                 : <Button variant="outline" onClick={() => void startMic()}>{c.mic.start}</Button>}
-              <Button onClick={record} disabled={mic !== 'listening'}>{mic === 'recording' ? c.mic.recording : c.mic.record}</Button>
+              <Button onClick={record} disabled={mic !== 'listening'} className={mic === 'recording' ? 'playing-ring !opacity-100' : undefined}>{mic === 'recording' ? c.mic.recording : c.mic.record}</Button>
             </div>
             {micError && <p className="text-sm text-destructive" role="alert">{micError}</p>}
             {recordingUrl && (
-              <div>
+              <div className="fade-up">
                 <p className="text-xs text-muted-foreground mb-1">{c.mic.playback}</p>
                 <audio controls src={recordingUrl} className="w-full" />
               </div>

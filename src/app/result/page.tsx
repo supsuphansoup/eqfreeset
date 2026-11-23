@@ -394,7 +394,7 @@ function ResultPageContent() {
                 <div className="absolute left-0 right-0 top-1/2 h-px bg-border z-10" />
                 <span className="absolute right-0 top-1/2 -translate-y-4 text-[10px] text-muted-foreground z-10 select-none">0dB</span>
                 <div className="flex h-full px-1 gap-2">
-                  {optimalEQ.bands.map((band) => {
+                  {optimalEQ.bands.map((band, i) => {
                     const g = Math.max(-10, Math.min(10, band.gain))
                     const pct = Math.abs(g) / 10 * 50
                     const pos = g >= 0
@@ -403,16 +403,16 @@ function ResultPageContent() {
                         <div className="flex-1 relative">
                           {pos && (
                             <div
-                              className="eq-bar-boost absolute bottom-0 left-0 right-0"
-                              style={{ height: `${pct * 2}%` }}
+                              className="eq-bar-boost bar-grow-up absolute bottom-0 left-0 right-0"
+                              style={{ height: `${pct * 2}%`, animationDelay: `${i * 45}ms` }}
                             />
                           )}
                         </div>
                         <div className="flex-1 relative">
                           {!pos && (
                             <div
-                              className="eq-bar-cut absolute top-0 left-0 right-0"
-                              style={{ height: `${pct * 2}%` }}
+                              className="eq-bar-cut bar-grow-down absolute top-0 left-0 right-0"
+                              style={{ height: `${pct * 2}%`, animationDelay: `${i * 45}ms` }}
                             />
                           )}
                         </div>
@@ -465,7 +465,7 @@ function ResultPageContent() {
               </div>
             </div>
             {shareFeedback && (
-              <p role="status" className="text-xs text-primary text-center mt-3 font-medium">
+              <p key={shareFeedback} role="status" className="text-xs text-primary text-center mt-3 font-medium fade-up">
                 {shareFeedback}
               </p>
             )}

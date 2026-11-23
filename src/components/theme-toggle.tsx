@@ -34,7 +34,8 @@ export function ThemeToggle() {
       aria-label="Toggle theme"
       className="w-11 h-11 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
     >
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {/* key로 아이콘을 다시 마운트해 전환할 때마다 회전하며 나타남 */}
+      {isDark ? <Sun key="sun" className="w-4 h-4 icon-swap" /> : <Moon key="moon" className="w-4 h-4 icon-swap" />}
     </button>
   )
 }

@@ -244,7 +244,7 @@ export default function TestContent() {
     <ol className="test-steps" aria-label={c.progress}>
       {c.stages.map((label, i) => {
         const stepIndex = ['device', 'audio', 'segment', 'test'].indexOf(currentStep === 'review' ? 'test' : currentStep)
-        return <li key={label} aria-current={i === stepIndex ? 'step' : undefined}><span className="test-step-marker">{i < stepIndex ? <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" /> : i + 1}</span><span>{currentStep === 'review' && i === 3 ? c.reviewStage : label}</span></li>
+        return <li key={label} aria-current={i === stepIndex ? 'step' : undefined}><span className="test-step-marker">{i < stepIndex ? <CheckCircle className="h-3.5 w-3.5 pop-in" aria-hidden="true" /> : i + 1}</span><span>{currentStep === 'review' && i === 3 ? c.reviewStage : label}</span></li>
       })}
     </ol>
     {selectedDevice && currentStep !== 'device' && <p className="test-content !py-3 text-xs text-muted-foreground">{c.selected}<span className="text-foreground font-medium ml-2">{selectedDevice.name}</span></p>}
@@ -576,7 +576,8 @@ export default function TestContent() {
 
         {!reviewing && <p className="text-xs text-muted-foreground leading-relaxed mb-4">{c.listening}</p>}
         {/* A / B Play Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-4 min-h-[180px]">
+        {/* 라운드가 바뀌면 새 비교가 들어오는 모션 (key로 다시 마운트) */}
+        <div key={currentRound} className="grid grid-cols-2 gap-3 mb-4 min-h-[180px] round-enter">
           {(['A', 'B'] as const).map(opt => {
             const isActive = playingOption === opt
             const isDone = opt === 'A' ? heardA : heardB
@@ -594,11 +595,11 @@ export default function TestContent() {
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
                   isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                }`}>
+                } ${isActive && !isLoading ? 'playing-ring' : ''}`}>
                   {isLoading && isActive ? <Loader2 className="w-4 h-4 animate-spin" /> : isActive
                     ? <Pause className="w-4 h-4" />
                     : isDone
-                      ? <CheckCircle className="w-4 h-4 text-primary" />
+                      ? <CheckCircle className="w-4 h-4 text-primary pop-in" />
                       : <Play className="w-4 h-4" />
                   }
                 </div>

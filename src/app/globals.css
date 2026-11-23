@@ -260,6 +260,70 @@
   .home-faq { grid-template-columns: .7fr 1fr; gap: 4rem; }
 }
 
+/* ─── Motion ───────────────────────────────────────────────────────────────
+   사용자의 동작(이동, 선택, 재생, 완료)에 답하는 움직임만 둔다. 섹션마다 반복되는 장식 효과는 쓰지 않는다. */
+:root {
+  --ease-out-quart: cubic-bezier(.25, 1, .5, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* 페이지 이동: 새 화면이 살짝 올라오며 나타남 (app/template.tsx) */
+.route-enter { animation: routeIn .28s var(--ease-out-quart) both; }
+@keyframes routeIn {
+  from { opacity: .01; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A/B 라운드 전환: 다음 비교가 오른쪽에서 들어옴 */
+.round-enter { animation: roundIn .32s var(--ease-out-quart) both; }
+@keyframes roundIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 상태가 바뀐 아이콘·라벨(체크, 완료 표시 등)이 튀어나옴 */
+.pop-in { animation: popIn .34s var(--ease-spring) both; }
+@keyframes popIn {
+  from { opacity: 0; transform: scale(.6); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 재생 중인 음원을 알리는 퍼지는 링 */
+.playing-ring { position: relative; }
+.playing-ring::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: 0 0 0 0 hsl(var(--primary) / .45);
+  animation: ringPulse 1.4s var(--ease-out-quart) infinite;
+}
+@keyframes ringPulse {
+  to { box-shadow: 0 0 0 12px hsl(var(--primary) / 0); }
+}
+
+/* 결과 EQ 막대: 0dB 선에서 자라남 (막대마다 시작 시간을 조금씩 늦춤) */
+.bar-grow-up { transform-origin: bottom; animation: barGrow .6s var(--ease-out-quart) both; }
+.bar-grow-down { transform-origin: top; animation: barGrow .6s var(--ease-out-quart) both; }
+@keyframes barGrow { from { transform: scaleY(0); } }
+
+/* 테마 전환 아이콘 회전 */
+.icon-swap { animation: iconSwap .4s var(--ease-spring) both; }
+@keyframes iconSwap { from { opacity: 0; transform: rotate(-90deg) scale(.5); } }
+
+/* 링크 카드·목록 누름 반응 */
+.guide-link, .press { transition: transform .12s var(--ease-out-quart), color .15s, border-color .15s, background-color .15s; }
+.guide-link:active, .press:active { transform: scale(.985); }
+
+/* 홈 EQ 미리보기: 선택 표시가 미끄러지듯 이동 */
+.preview-presets { position: relative; }
+.preview-presets button { position: relative; z-index: 1; transition: color .2s, transform .1s; }
+.preview-presets button[aria-pressed="true"] { background: transparent; }
+.preset-indicator {
+  position: absolute; top: 0; left: 0; z-index: 0;
+  border-radius: .5rem; background: hsl(var(--primary) / .1);
+  transition: transform .35s var(--ease-out-quart), width .35s var(--ease-out-quart), height .35s var(--ease-out-quart);
+}
+.curve-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: curveDraw .9s .15s var(--ease-out-quart) forwards; }
+@keyframes curveDraw { to { stroke-dashoffset: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

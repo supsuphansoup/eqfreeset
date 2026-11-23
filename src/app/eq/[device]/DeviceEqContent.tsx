@@ -21,7 +21,7 @@ export default function DeviceEqContent({ deviceId, content }: { deviceId: strin
             <Link
               key={d.id}
               href={`/eq/${d.id}`}
-              className="text-sm px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+              className="press text-sm px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
             >
               {getDeviceDisplayName(d.id, lang)}
             </Link>
