@@ -1,5 +1,8 @@
 import { MetadataRoute } from 'next'
 import { GUIDES } from '@/lib/guides'
+import { FEATURED_DEVICES } from '@/lib/device-guides'
+
+export const dynamic = 'force-static'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://eqfreeset.pages.dev'
@@ -53,6 +56,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),
+    {
+      url: `${baseUrl}/eq/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    ...FEATURED_DEVICES.map((d) => ({
+      url: `${baseUrl}/eq/${d.id}/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    {
+      url: `${baseUrl}/tools/`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
     {
       url: `${baseUrl}/license/`,
       lastModified: new Date(),

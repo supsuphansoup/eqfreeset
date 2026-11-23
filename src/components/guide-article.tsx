@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { useLanguage, type LangCode } from '@/lib/language-context'
 import { GUIDES, type GuideBlock, type GuideContent } from '@/lib/guides'
@@ -92,7 +93,7 @@ function Block({ block }: { block: GuideBlock }) {
   }
 }
 
-export function GuideArticleView({ slug, content }: { slug: string; content: GuideContent }) {
+export function GuideArticleView({ slug, content, children }: { slug: string; content: GuideContent; children?: ReactNode }) {
   const { lang } = useLanguage()
   const c = content[lang] ?? content.ko
   const ui = UI[lang] ?? UI.ko
@@ -121,6 +122,8 @@ export function GuideArticleView({ slug, content }: { slug: string; content: Gui
           ))}
         </div>
       </article>
+
+      {children}
 
       {/* CTA */}
       <section className="pt-12">

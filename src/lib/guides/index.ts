@@ -165,4 +165,19 @@ export const GUIDES: GuideEntry[] = [
       ja: 'ポップ、ロック、EDM、クラシックで調整すべき帯域とポイント',
     },
   },
+  {
+    slug: 'eq-apps',
+    title: {
+      ko: '무료 EQ 프로그램·앱 추천',
+      en: 'Free EQ Apps and Programs',
+      zh: '免费EQ软件与应用推荐',
+      ja: '無料EQソフト・アプリのおすすめ',
+    },
+    desc: {
+      ko: 'Windows, Mac, 안드로이드, 아이폰별 이퀄라이저 프로그램 비교와 고르는 기준',
+      en: 'Comparing equalizer programs for Windows, Mac, Android and iPhone, and how to choose',
+      zh: 'Windows、Mac、Android、iPhone的均衡器软件对比与选择标准',
+      ja: 'Windows、Mac、Android、iPhone別のイコライザーソフト比較と選び方',
+    },
+  },
 ]

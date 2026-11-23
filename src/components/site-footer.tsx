@@ -12,6 +12,8 @@ type FooterData = {
   links: {
     home: string
     test: string
+    devices: string
+    tools: string
     info: string
     allGuides: string
     contact: string
@@ -29,6 +31,8 @@ const CONTENT: Record<LangCode, FooterData> = {
     links: {
       home: '홈',
       test: '기기 EQ 테스트',
+      devices: '기기별 EQ 설정값',
+      tools: '이어폰 좌우·마이크 테스트',
       info: 'EQ와 이 서비스에 대해',
       allGuides: '전체 가이드',
       contact: '개발자와 소통',
@@ -44,6 +48,8 @@ const CONTENT: Record<LangCode, FooterData> = {
     links: {
       home: 'Home',
       test: 'Device EQ Test',
+      devices: 'EQ Settings by Device',
+      tools: 'Earphone & Mic Test',
       info: 'About EQ & This Service',
       allGuides: 'All Guides',
       contact: 'Contact the Developer',
@@ -59,6 +65,8 @@ const CONTENT: Record<LangCode, FooterData> = {
     links: {
       home: '首页',
       test: '设备EQ测试',
+      devices: '按设备的EQ设置',
+      tools: '耳机左右·麦克风测试',
       info: '关于EQ与本服务',
       allGuides: '全部指南',
       contact: '联系开发者',
@@ -74,6 +82,8 @@ const CONTENT: Record<LangCode, FooterData> = {
     links: {
       home: 'ホーム',
       test: 'デバイスEQテスト',
+      devices: '機器別EQ設定',
+      tools: 'イヤホン左右・マイクテスト',
       info: 'EQとこのサービスについて',
       allGuides: 'ガイド一覧',
       contact: '開発者に連絡',
@@ -101,6 +111,8 @@ export function SiteFooter() {
       items: [
         { href: '/', label: c.links.home },
         { href: '/test', label: c.links.test },
+        { href: '/eq', label: c.links.devices },
+        { href: '/tools', label: c.links.tools },
         { href: '/info', label: c.links.info },
       ],
     },
